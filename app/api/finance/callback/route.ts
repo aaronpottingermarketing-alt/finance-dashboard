@@ -1,4 +1,3 @@
-export const runtime = 'edge'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { exchangeTrueLayerCode, encrypt, financeSupabase, TL_DATA_BASE } from '@/lib/finance'
