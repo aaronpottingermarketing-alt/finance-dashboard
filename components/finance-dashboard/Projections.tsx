@@ -47,7 +47,7 @@ function computeAvgMonthlyNet(allTransactions: FinanceTransaction[]): number {
     const { from, to } = monthRange(m)
     const txns = allTransactions.filter(t => t.booking_date >= from && t.booking_date <= to)
     if (txns.length === 0) continue
-    const income = txns.filter(t => t.category === 'income').reduce((s, t) => s + t.amount_pence, 0)
+    const income = txns.filter(t => t.amount_pence > 0 && t.category !== 'transfers').reduce((s, t) => s + t.amount_pence, 0)
     const spend = txns.filter(t => t.amount_pence < 0).reduce((s, t) => s + Math.abs(t.amount_pence), 0)
     totalNet += income - spend
     count++
@@ -68,7 +68,7 @@ function computeBreakEvenDay(allTransactions: FinanceTransaction[], accounts: Fi
   const { from, to } = monthRange(currentMonth)
 
   const monthTxns = allTransactions.filter(t => t.booking_date >= from && t.booking_date <= to)
-  const income = monthTxns.filter(t => t.category === 'income').reduce((s, t) => s + t.amount_pence, 0)
+  const income = monthTxns.filter(t => t.amount_pence > 0 && t.category !== 'transfers').reduce((s, t) => s + t.amount_pence, 0)
 
   if (income === 0) {
     // Fall back to avg monthly income across accounts if no current-month income

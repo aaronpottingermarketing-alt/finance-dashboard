@@ -44,7 +44,7 @@ function computeScore(
     const { from, to } = monthRange(m)
     const monthTxns = allTransactions.filter(t => t.booking_date >= from && t.booking_date <= to)
     if (monthTxns.length === 0) continue
-    const inc = monthTxns.filter(t => t.category === 'income').reduce((s, t) => s + t.amount_pence, 0)
+    const inc = monthTxns.filter(t => t.amount_pence > 0 && t.category !== 'transfers').reduce((s, t) => s + t.amount_pence, 0)
     const sp = monthTxns.filter(t => t.amount_pence < 0).reduce((s, t) => s + Math.abs(t.amount_pence), 0)
     totalIncome += inc
     totalSpend += sp

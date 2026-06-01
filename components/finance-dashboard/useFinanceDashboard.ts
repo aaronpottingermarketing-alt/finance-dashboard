@@ -352,7 +352,7 @@ export function useFinanceDashboard() {
 
   const paydayPeriods = useCallback((): PaydayPeriod[] => {
     const income = allTransactions
-      .filter(t => t.category === 'income' && t.amount_pence > 50000) // £500+
+      .filter(t => t.amount_pence > 50000 && t.category !== 'transfers') // Credits > £500, not transfers
       .sort((a, b) => a.booking_date.localeCompare(b.booking_date))
 
     if (income.length < 1) return []
@@ -393,7 +393,7 @@ export function useFinanceDashboard() {
       const { from, to } = monthRange(m)
       const monthTxns = allTransactions.filter(t => t.booking_date >= from && t.booking_date <= to)
       if (monthTxns.length === 0) continue
-      const income = monthTxns.filter(t => t.category === 'income').reduce((s, t) => s + t.amount_pence, 0)
+      const income = monthTxns.filter(t => t.amount_pence > 0 && t.category !== 'transfers').reduce((s, t) => s + t.amount_pence, 0)
       const spend = monthTxns.filter(t => t.amount_pence < 0).reduce((s, t) => s + Math.abs(t.amount_pence), 0)
       totalNet += income - spend
       months++

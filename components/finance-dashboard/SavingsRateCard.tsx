@@ -22,8 +22,9 @@ export default function SavingsRateCard({ allTransactions }: Props) {
   const today = startOfDay(new Date())
 
   // ── Last payday ────────────────────────────────────────────────────────────
+  // Use ALL credits (not just ones categorised as income) — real descriptions rarely say "salary"
   const incomeTxns = allTransactions
-    .filter(t => t.category === 'income' && t.amount_pence > 0)
+    .filter(t => t.amount_pence > 500000 && t.category !== 'transfers') // > £5000, not a transfer — likely salary
     .sort((a, b) => b.booking_date.localeCompare(a.booking_date))
 
   const lastPaydayDate: Date | null = incomeTxns.length > 0

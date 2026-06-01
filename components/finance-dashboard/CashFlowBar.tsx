@@ -28,8 +28,9 @@ function currentMonthTransactions(txns: FinanceTransaction[]): FinanceTransactio
 export default function CashFlowBar({ transactions }: Props) {
   const monthTxns = currentMonthTransactions(transactions)
 
+  // Count ALL positive credits as inflow — real descriptions rarely say "salary"
   const income = monthTxns
-    .filter(t => t.amount_pence > 0 && t.category === 'income')
+    .filter(t => t.amount_pence > 0 && t.category !== 'transfers')
     .reduce((s, t) => s + t.amount_pence, 0)
 
   const spend = monthTxns
