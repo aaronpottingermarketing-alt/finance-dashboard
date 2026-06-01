@@ -1,10 +1,49 @@
 'use client'
 
-import type { FinanceTransaction } from './types'
-import { CATEGORY_DOT, CATEGORY_BG } from './types'
+import type { FinanceTransaction, TransactionCategory } from './types'
 
 interface Props {
   transactions: FinanceTransaction[]
+}
+
+// Inline colour maps — no Tailwind colour classes
+const DOT_COLOUR: Record<TransactionCategory, string> = {
+  food: '#fb923c',
+  transport: '#60a5fa',
+  subscriptions: '#a78bfa',
+  entertainment: '#f472b6',
+  health: '#4ade80',
+  shopping: '#fb7185',
+  bills: '#facc15',
+  income: '#00d4aa',
+  transfers: '#38bdf8',
+  other: '#64748b',
+}
+
+const BADGE_BG: Record<TransactionCategory, string> = {
+  food: 'rgba(251,146,60,0.15)',
+  transport: 'rgba(96,165,250,0.15)',
+  subscriptions: 'rgba(167,139,250,0.15)',
+  entertainment: 'rgba(244,114,182,0.15)',
+  health: 'rgba(74,222,128,0.15)',
+  shopping: 'rgba(251,113,133,0.15)',
+  bills: 'rgba(250,204,21,0.15)',
+  income: 'rgba(0,212,170,0.15)',
+  transfers: 'rgba(56,189,248,0.15)',
+  other: 'rgba(100,116,139,0.15)',
+}
+
+const BADGE_TEXT: Record<TransactionCategory, string> = {
+  food: '#fb923c',
+  transport: '#60a5fa',
+  subscriptions: '#a78bfa',
+  entertainment: '#f472b6',
+  health: '#4ade80',
+  shopping: '#fb7185',
+  bills: '#facc15',
+  income: '#00d4aa',
+  transfers: '#38bdf8',
+  other: '#94a3b8',
 }
 
 function fmt(pence: number): string {
@@ -35,40 +74,134 @@ function formatDate(dateStr: string): string {
 
 export default function TransactionList({ transactions }: Props) {
   if (!transactions.length) {
-    return <p className="text-xs text-zinc-600 py-4">No transactions for this period</p>
+    return (
+      <p style={{ color: '#334155', fontSize: '0.75rem', paddingTop: '1rem', paddingBottom: '1rem' }}>
+        No transactions for this period
+      </p>
+    )
   }
 
   const groups = groupByDate(transactions)
 
   return (
-    <div className="flex flex-col gap-4">
-      <span className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500">Transactions</span>
+    <div
+      style={{
+        background: 'rgba(255,255,255,0.03)',
+        border: '1px solid rgba(255,255,255,0.07)',
+        borderRadius: '1rem',
+        padding: '1.25rem',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1rem',
+      }}
+    >
+      <span
+        style={{
+          fontSize: '11px',
+          fontWeight: 600,
+          textTransform: 'uppercase',
+          letterSpacing: '0.1em',
+          color: '#475569',
+        }}
+      >
+        Transactions
+      </span>
+
       {groups.map(([date, txns]) => (
         <div key={date}>
-          <p className="text-[11px] font-medium text-zinc-600 mb-1.5">{formatDate(date)}</p>
-          <div className="flex flex-col gap-0.5">
-            {txns.map(t => (
-              <div key={t.id} className="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-zinc-900 transition-colors group">
-                <span className={`w-2 h-2 rounded-full shrink-0 ${CATEGORY_DOT[t.category]}`} />
-                <div className="flex-1 min-w-0">
-                  <span className="text-sm text-zinc-300 truncate block">
-                    {t.merchant_name ?? t.description}
+          <p
+            style={{
+              fontSize: '11px',
+              fontWeight: 500,
+              color: '#334155',
+              marginBottom: '0.375rem',
+            }}
+          >
+            {formatDate(date)}
+          </p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            {txns.map(t => {
+              const cat = t.category as TransactionCategory
+              const isCredit = t.amount_pence >= 0
+              return (
+                <div
+                  key={t.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.625rem',
+                    padding: '0.5rem 0.75rem',
+                    borderRadius: '0.5rem',
+                    transition: 'background 0.15s',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                >
+                  {/* Category dot */}
+                  <span
+                    style={{
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      flexShrink: 0,
+                      background: DOT_COLOUR[cat] ?? '#64748b',
+                    }}
+                  />
+
+                  {/* Merchant + pending */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <span
+                      style={{
+                        fontSize: '0.875rem',
+                        color: '#e2e8f0',
+                        display: 'block',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {t.merchant_name ?? t.description}
+                    </span>
+                    {t.is_pending && (
+                      <span style={{ fontSize: '10px', color: '#facc15' }}>Pending</span>
+                    )}
+                  </div>
+
+                  {/* Category badge */}
+                  <span
+                    style={{
+                      fontSize: '10px',
+                      fontWeight: 500,
+                      borderRadius: '0.25rem',
+                      padding: '2px 6px',
+                      flexShrink: 0,
+                      background: BADGE_BG[cat] ?? 'rgba(100,116,139,0.15)',
+                      color: BADGE_TEXT[cat] ?? '#94a3b8',
+                    }}
+                  >
+                    {t.category}
                   </span>
-                  {t.is_pending && (
-                    <span className="text-[10px] text-yellow-500">Pending</span>
+
+                  {/* Subscription indicator */}
+                  {t.is_subscription && (
+                    <span style={{ fontSize: '12px', color: '#a78bfa', flexShrink: 0 }}>↻</span>
                   )}
+
+                  {/* Amount */}
+                  <span
+                    style={{
+                      fontSize: '0.875rem',
+                      fontWeight: 500,
+                      flexShrink: 0,
+                      color: isCredit ? '#00d4aa' : '#e2e8f0',
+                    }}
+                  >
+                    {fmt(t.amount_pence)}
+                  </span>
                 </div>
-                <span className={`text-[10px] font-medium rounded px-1.5 py-0.5 shrink-0 ${CATEGORY_BG[t.category]}`}>
-                  {t.category}
-                </span>
-                {t.is_subscription && (
-                  <span className="text-[10px] text-purple-400 shrink-0">↻</span>
-                )}
-                <span className={`text-sm font-medium shrink-0 ${t.amount_pence < 0 ? 'text-zinc-300' : 'text-emerald-400'}`}>
-                  {fmt(t.amount_pence)}
-                </span>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       ))}

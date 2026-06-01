@@ -47,7 +47,7 @@ export function decrypt(data: string): string {
 export function financeSupabase(): SupabaseClient {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 }
 
@@ -60,31 +60,39 @@ export const TL_AUTH_BASE = isSandbox
 export const TL_DATA_BASE = isSandbox
   ? 'https://api.truelayer-sandbox.com'
   : 'https://api.truelayer.com'
-// Token exchange always hits the non-sandbox endpoint
-const TL_TOKEN_URL = 'https://auth.truelayer.com/connect/token'
+// Token exchange endpoint (sandbox has its own)
+const TL_TOKEN_URL = isSandbox
+  ? 'https://auth.truelayer-sandbox.com/connect/token'
+  : 'https://auth.truelayer.com/connect/token'
 
 export const SUPPORTED_BANKS = [
-  { id: 'barclays', name: 'Barclays' },
-  { id: 'monzo', name: 'Monzo' },
-  { id: 'starling', name: 'Starling' },
-  { id: 'hsbc', name: 'HSBC' },
-  { id: 'nationwide', name: 'Nationwide' },
-  { id: 'lloyds', name: 'Lloyds' },
+  { id: 'BARCLAYS_PERSONAL_RRWFKBKU', name: 'Barclays', emoji: '🏦' },
+  { id: 'ob-bcard', name: 'Barclaycard', emoji: '💳' },
+  { id: 'ob-monzo', name: 'Monzo', emoji: '🟠' },
+  { id: 'ob-starling', name: 'Starling', emoji: '🐦' },
+  { id: 'ob-hsbc', name: 'HSBC', emoji: '🏛️' },
+  { id: 'ob-natwest', name: 'NatWest', emoji: '🏦' },
+  { id: 'ob-lloyds', name: 'Lloyds', emoji: '🏦' },
+  { id: 'ob-nationwide', name: 'Nationwide', emoji: '🏠' },
+  { id: 'ob-santander', name: 'Santander', emoji: '🏦' },
+  { id: 'ob-halifax', name: 'Halifax', emoji: '🏦' },
 ]
 
-// Build the TrueLayer OAuth URL. institution_id is optional — TrueLayer shows
-// a bank picker UI if omitted, which is the simplest UX for users.
+// Build the TrueLayer OAuth URL
 export function buildTrueLayerAuthUrl(state: string, redirectUri: string): string {
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: process.env.TRUELAYER_CLIENT_ID!,
     scope: 'info accounts balance transactions offline_access',
     redirect_uri: redirectUri,
-    // uk-ob-all = Open Banking, uk-oauth-all = OAuth banks (covers all UK banks)
-    // uk-mock = sandbox test provider
-    providers: isSandbox ? 'uk-ob-all uk-oauth-all uk-mock' : 'uk-ob-all uk-oauth-all',
     state,
   })
+  // Sandbox uses the mock provider; production uses all UK banks
+  if (isSandbox) {
+    params.set('providers', 'mock')
+  } else {
+    params.set('providers', 'uk-ob-all uk-oauth-all')
+  }
   return `${TL_AUTH_BASE}/?${params}`
 }
 

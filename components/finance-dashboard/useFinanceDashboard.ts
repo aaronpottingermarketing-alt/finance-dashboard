@@ -15,6 +15,7 @@ import type {
   ImprovementCard,
   InsightType,
   TransactionCategory,
+  T212Portfolio,
 } from './types'
 
 function currentMonthStr(): string {
@@ -40,9 +41,11 @@ export function useFinanceDashboard() {
   const [priceAlerts, setPriceAlerts] = useState<PriceChange[]>([])
   const [goals, setGoals] = useState<SavingsGoal[]>([])
   const [bills, setBills] = useState<BillScheduleItem[]>([])
+  const [portfolio, setPortfolio] = useState<T212Portfolio | null>(null)
+  const [portfolioLoading, setPortfolioLoading] = useState(false)
 
   const [selectedMonth, setSelectedMonth] = useState<string>(currentMonthStr)
-  const [viewMode, setViewMode] = useState<'overview' | 'detail'>('overview')
+  const [viewMode, setViewMode] = useState<'overview' | 'detail' | 'insights'>('overview')
   const [detailTab, setDetailTab] = useState<'spending' | 'bills' | 'transactions'>('spending')
   const [selectedPeriod, setSelectedPeriod] = useState<PaydayPeriod | null>(null)
 
@@ -120,6 +123,18 @@ export function useFinanceDashboard() {
     setBills(data)
   }, [])
 
+  const loadPortfolio = useCallback(async () => {
+    setPortfolioLoading(true)
+    try {
+      const res = await fetch('/api/finance/portfolio')
+      if (!res.ok) return
+      const data = await res.json()
+      if (!data.error) setPortfolio(data as T212Portfolio)
+    } finally {
+      setPortfolioLoading(false)
+    }
+  }, [])
+
   // ─── Initial load ────────────────────────────────────────────────────────────
 
   useEffect(() => {
@@ -136,6 +151,7 @@ export function useFinanceDashboard() {
           loadPriceAlerts(),
           loadGoals(),
           loadBills(),
+          loadPortfolio(),
         ])
       }
       setLoading(false)
@@ -480,6 +496,9 @@ export function useFinanceDashboard() {
     insightsLoading,
     insightsStreamText,
     lastSynced,
+    portfolio,
+    portfolioLoading,
+    loadPortfolio,
 
     // Actions
     sync,

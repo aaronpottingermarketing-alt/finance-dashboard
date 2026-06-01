@@ -1,7 +1,7 @@
 'use client'
 
 interface MonthBar {
-  label: string   // 'Jun'
+  label: string
   total_pence: number
   isCurrent: boolean
 }
@@ -19,53 +19,86 @@ export default function SpendingChart({ data }: Props) {
   if (!data.length) return null
 
   const maxVal = Math.max(...data.map(d => d.total_pence), 1)
-  const W = 400
-  const H = 100
-  const PAD = { top: 10, right: 8, bottom: 22, left: 36 }
-  const innerW = W - PAD.left - PAD.right
-  const innerH = H - PAD.top - PAD.bottom
-  const barW = Math.floor(innerW / data.length) - 4
+  const currentBar = data.find(d => d.isCurrent)
 
   return (
-    <div className="w-full">
-      <span className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500">6-Month Spend</span>
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-28 mt-1" preserveAspectRatio="none">
-        {/* Y axis labels */}
-        <text x={PAD.left - 4} y={PAD.top + 4} textAnchor="end" fontSize="8" fill="#52525b">{fmt(maxVal)}</text>
-        <text x={PAD.left - 4} y={PAD.top + innerH} textAnchor="end" fontSize="8" fill="#52525b">£0</text>
-        {/* Gridline */}
-        <line x1={PAD.left} y1={PAD.top + innerH} x2={PAD.left + innerW} y2={PAD.top + innerH} stroke="#27272a" strokeWidth="1" />
+    <div style={{
+      background: 'rgba(255,255,255,0.03)',
+      border: '1px solid rgba(255,255,255,0.07)',
+      borderRadius: '1rem',
+      padding: '1.25rem',
+    }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+        <div>
+          <p style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#475569', marginBottom: '4px' }}>
+            Revenue Flow
+          </p>
+          {currentBar && (
+            <p style={{ fontSize: '24px', fontWeight: 700, color: '#e2e8f0', lineHeight: 1 }}>
+              {fmt(currentBar.total_pence)}
+              <span style={{ fontSize: '13px', fontWeight: 400, color: '#475569', marginLeft: '6px' }}>this month</span>
+            </p>
+          )}
+        </div>
+      </div>
 
+      {/* Bars */}
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', height: '160px' }}>
         {data.map((bar, i) => {
-          const barH = (bar.total_pence / maxVal) * innerH
-          const x = PAD.left + i * (innerW / data.length) + 2
-          const y = PAD.top + innerH - barH
-
+          const heightPct = Math.max((bar.total_pence / maxVal) * 100, 4)
           return (
-            <g key={i}>
-              <rect
-                x={x}
-                y={y}
-                width={barW}
-                height={barH}
-                rx="2"
-                fill={bar.isCurrent ? '#34d399' : '#3f3f46'}
-                opacity={bar.isCurrent ? 1 : 0.7}
-              />
-              <title>{bar.label}: {fmt(bar.total_pence)}</title>
-              <text
-                x={x + barW / 2}
-                y={H - 4}
-                textAnchor="middle"
-                fontSize="8"
-                fill={bar.isCurrent ? '#a1a1aa' : '#52525b'}
-              >
+            <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', height: '100%', justifyContent: 'flex-end' }}>
+              {/* Value label above current bar */}
+              {bar.isCurrent && (
+                <div style={{
+                  background: '#00d4aa',
+                  color: '#000',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  padding: '3px 8px',
+                  borderRadius: '20px',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                }}>
+                  {fmt(bar.total_pence)}
+                </div>
+              )}
+
+              {/* Bar */}
+              <div style={{
+                width: '100%',
+                height: `${heightPct}%`,
+                background: bar.isCurrent
+                  ? 'linear-gradient(180deg, #00d4aa 0%, #00a884 100%)'
+                  : 'rgba(255,255,255,0.08)',
+                borderRadius: '8px 8px 4px 4px',
+                position: 'relative',
+                transition: 'height 0.3s ease',
+                flexShrink: 0,
+                boxShadow: bar.isCurrent ? '0 0 20px rgba(0,212,170,0.3)' : 'none',
+              }} />
+
+              {/* Month label */}
+              <span style={{
+                fontSize: '12px',
+                fontWeight: bar.isCurrent ? 700 : 400,
+                color: bar.isCurrent ? '#00d4aa' : '#475569',
+                flexShrink: 0,
+              }}>
                 {bar.label}
-              </text>
-            </g>
+              </span>
+            </div>
           )
         })}
-      </svg>
+      </div>
+
+      {/* Y axis hints */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '8px' }}>
+        <span style={{ fontSize: '11px', color: '#334155' }}>£0</span>
+        <span style={{ fontSize: '11px', color: '#334155' }}>{fmt(maxVal / 2)}</span>
+        <span style={{ fontSize: '11px', color: '#334155' }}>{fmt(maxVal)}</span>
+      </div>
     </div>
   )
 }

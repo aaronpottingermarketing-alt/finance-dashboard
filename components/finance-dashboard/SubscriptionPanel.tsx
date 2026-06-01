@@ -30,8 +30,22 @@ export default function SubscriptionPanel({ subscriptions }: Props) {
   if (!entries.length) {
     return (
       <div>
-        <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500 mb-2">Subscriptions</p>
-        <p className="text-xs text-zinc-600">No subscriptions detected yet</p>
+        <p
+          className="text-[11px] font-semibold uppercase tracking-widest mb-3"
+          style={{ color: '#475569' }}
+        >
+          Subscriptions
+        </p>
+        <div
+          className="text-center py-6"
+          style={{
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.07)',
+            borderRadius: '1rem',
+          }}
+        >
+          <p className="text-xs" style={{ color: '#334155' }}>No subscriptions detected yet</p>
+        </div>
       </div>
     )
   }
@@ -39,21 +53,37 @@ export default function SubscriptionPanel({ subscriptions }: Props) {
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500">Subscriptions</p>
-        <span className="text-xs text-zinc-400">{fmt(totalPence)}/mo total</span>
+        <p
+          className="text-[11px] font-semibold uppercase tracking-widest"
+          style={{ color: '#475569' }}
+        >
+          Subscriptions
+        </p>
+        <span className="text-xs" style={{ color: '#334155' }}>{fmt(totalPence)}/mo total</span>
       </div>
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1.5">
         {entries.map(t => {
           const isExpensive = Math.abs(t.amount_pence) > 2000 // > £20
           return (
-            <div key={t.id} className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800">
+            <div
+              key={t.id}
+              className="flex items-center justify-between px-3 py-2"
+              style={{
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.07)',
+                borderRadius: '1rem',
+              }}
+            >
               <div className="flex items-center gap-2 min-w-0">
-                <span className="text-purple-400 text-sm shrink-0">↻</span>
-                <span className="text-xs text-zinc-300 truncate">
+                <span className="text-sm shrink-0" style={{ color: '#a78bfa' }}>↻</span>
+                <span className="text-xs truncate" style={{ color: '#e2e8f0' }}>
                   {t.merchant_name ?? t.description}
                 </span>
               </div>
-              <span className={`text-xs font-medium shrink-0 ml-2 ${isExpensive ? 'text-amber-400' : 'text-zinc-400'}`}>
+              <span
+                className="text-xs font-medium shrink-0 ml-2"
+                style={{ color: isExpensive ? '#fbbf24' : '#475569' }}
+              >
                 {fmt(t.amount_pence)}/mo
               </span>
             </div>

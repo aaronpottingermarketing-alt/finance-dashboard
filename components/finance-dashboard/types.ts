@@ -1,3 +1,30 @@
+// ─── Trading 212 ──────────────────────────────────────────────────────────────
+
+export type T212Position = {
+  ticker: string
+  quantity: number
+  averagePrice: number
+  currentPrice: number
+  ppl: number              // profit/loss in account currency
+  fxPpl: number
+  initialFillDate: string
+}
+
+export type T212Cash = {
+  free: number
+  invested: number
+  ppl: number
+  total: number
+  result: number
+}
+
+export type T212Portfolio = {
+  positions: T212Position[]
+  cash: T212Cash
+}
+
+// ─── Categories ───────────────────────────────────────────────────────────────
+
 export type TransactionCategory =
   | 'food'
   | 'transport'

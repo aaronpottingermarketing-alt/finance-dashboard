@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import type { useFinanceDashboard } from './useFinanceDashboard'
 import MonthSelector from './MonthSelector'
 import SpendingChart from './SpendingChart'
@@ -45,50 +46,98 @@ const TABS = [
 ]
 
 export default function DetailDashboard({ fd }: Props) {
+  const [hoveredTab, setHoveredTab] = useState<string | null>(null)
   const chartData = getLastNMonths(fd.allTransactions, 6)
   const spendByCategory = fd.spendByCategory()
   const subs = fd.subscriptionsList()
 
   return (
-    <div className="flex flex-1 overflow-hidden">
+    <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
       {/* Left main pane */}
-      <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-5">
-        <div className="flex items-center justify-between">
+      <div
+        style={{
+          flex: 1,
+          overflow: 'hidden',
+          padding: '1.25rem',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1.25rem',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <MonthSelector value={fd.selectedMonth} onChange={fd.setSelectedMonth} />
         </div>
 
         <SpendingChart data={chartData} />
 
         {/* Tab navigation */}
-        <div className="flex border-b border-zinc-800">
-          {TABS.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => fd.setDetailTab(tab.id)}
-              className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors -mb-px ${
-                fd.detailTab === tab.id
-                  ? 'border-zinc-300 text-zinc-100'
-                  : 'border-transparent text-zinc-500 hover:text-zinc-300'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+        <div
+          style={{
+            display: 'flex',
+            borderBottom: '1px solid rgba(255,255,255,0.07)',
+          }}
+        >
+          {TABS.map(tab => {
+            const isActive = fd.detailTab === tab.id
+            return (
+              <button
+                key={tab.id}
+                onClick={() => fd.setDetailTab(tab.id)}
+                onMouseEnter={() => setHoveredTab(tab.id)}
+                onMouseLeave={() => setHoveredTab(null)}
+                style={{
+                  padding: '0.5rem 1rem',
+                  fontSize: '0.75rem',
+                  fontWeight: 500,
+                  color: isActive
+                    ? '#00d4aa'
+                    : hoveredTab === tab.id
+                    ? '#e2e8f0'
+                    : '#475569',
+                  borderBottom: isActive ? '2px solid #00d4aa' : '2px solid transparent',
+                  marginBottom: '-1px',
+                  background: 'none',
+                  border: 'none',
+                  borderBottomStyle: 'solid',
+                  borderBottomWidth: '2px',
+                  borderBottomColor: isActive ? '#00d4aa' : 'transparent',
+                  cursor: 'pointer',
+                  transition: 'color 0.15s, border-color 0.15s',
+                }}
+              >
+                {tab.label}
+              </button>
+            )
+          })}
         </div>
 
-        {fd.detailTab === 'spending' && (
-          <CategoryBreakdown spendByCategory={spendByCategory} />
-        )}
-        {fd.detailTab === 'bills' && (
-          <BillCalendar bills={fd.bills} month={fd.selectedMonth} />
-        )}
-        {fd.detailTab === 'transactions' && (
-          <TransactionList transactions={fd.transactions} />
-        )}
+        {/* Tab content — fills remaining space */}
+        <div style={{ flex: 1, overflow: fd.detailTab === 'bills' ? 'hidden' : 'auto', minHeight: 0 }}>
+          {fd.detailTab === 'spending' && (
+            <CategoryBreakdown spendByCategory={spendByCategory} />
+          )}
+          {fd.detailTab === 'bills' && (
+            <BillCalendar bills={fd.bills} month={fd.selectedMonth} />
+          )}
+          {fd.detailTab === 'transactions' && (
+            <TransactionList transactions={fd.transactions} />
+          )}
+        </div>
       </div>
 
       {/* Right sidebar */}
-      <div className="w-72 shrink-0 border-l border-zinc-800 overflow-y-auto p-4 flex flex-col gap-6">
+      <div
+        style={{
+          width: '18rem',
+          flexShrink: 0,
+          borderLeft: '1px solid rgba(255,255,255,0.05)',
+          overflowY: 'auto',
+          padding: '1rem',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1.5rem',
+        }}
+      >
         <AIInsightsPanel
           insights={fd.insights}
           loading={fd.insightsLoading}

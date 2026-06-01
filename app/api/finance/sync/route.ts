@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
           }
 
           // Fetch transactions (last 90 days)
-          const from = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+          const from = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
           const to = new Date().toISOString().split('T')[0]
           const txnRes = await tlFetch(
             connection.id,

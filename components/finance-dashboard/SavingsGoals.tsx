@@ -15,21 +15,46 @@ function fmt(pence: number): string {
   return (pence / 100).toLocaleString('en-GB', { style: 'currency', currency: 'GBP', maximumFractionDigits: 0 })
 }
 
-const COLOURS = ['emerald', 'blue', 'purple', 'amber', 'rose', 'sky']
+const COLOURS = ['emerald', 'blue', 'purple', 'amber', 'rose', 'sky'] as const
+type GoalColour = typeof COLOURS[number]
 
-const COLOUR_BAR: Record<string, string> = {
-  emerald: 'bg-emerald-500',
-  blue: 'bg-blue-500',
-  purple: 'bg-purple-500',
-  amber: 'bg-amber-500',
-  rose: 'bg-rose-500',
-  sky: 'bg-sky-500',
+const COLOUR_HEX: Record<GoalColour, string> = {
+  emerald: '#10b981',
+  blue: '#3b82f6',
+  purple: '#a78bfa',
+  amber: '#f59e0b',
+  rose: '#f43f5e',
+  sky: '#0ea5e9',
+}
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  background: 'rgba(255,255,255,0.04)',
+  border: '1px solid rgba(255,255,255,0.10)',
+  borderRadius: '0.5rem',
+  padding: '6px 10px',
+  fontSize: '12px',
+  color: '#e2e8f0',
+  outline: 'none',
 }
 
 export default function SavingsGoals({ goals, accounts, avgMonthlySavings, onCreate, onDelete }: Props) {
   const [adding, setAdding] = useState(false)
-  const [form, setForm] = useState({ name: '', target: '', target_date: '', colour: 'emerald', linked_account_id: '' })
+  const [form, setForm] = useState<{
+    name: string
+    target: string
+    target_date: string
+    colour: GoalColour
+    linked_account_id: string
+  }>({ name: '', target: '', target_date: '', colour: 'emerald', linked_account_id: '' })
   const [saving, setSaving] = useState(false)
+  const [focusedField, setFocusedField] = useState<string | null>(null)
+
+  function focusStyle(field: string): React.CSSProperties {
+    return focusedField === field
+      ? { ...inputStyle, border: '1px solid rgba(0,212,170,0.5)' }
+      : inputStyle
+  }
 
   async function handleCreate() {
     if (!form.name || !form.target) return
@@ -53,42 +78,65 @@ export default function SavingsGoals({ goals, accounts, avgMonthlySavings, onCre
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500">Savings Goals</p>
+        <p
+          className="text-[11px] font-semibold uppercase tracking-widest"
+          style={{ color: '#475569' }}
+        >
+          Savings Goals
+        </p>
         <button
           onClick={() => setAdding(!adding)}
-          className="text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors"
+          className="text-[11px] transition-colors"
+          style={{ color: '#00d4aa' }}
+          onMouseEnter={e => (e.currentTarget.style.opacity = '0.75')}
+          onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
         >
           {adding ? 'Cancel' : '+ Add'}
         </button>
       </div>
 
       {adding && (
-        <div className="mb-3 p-3 bg-zinc-900 border border-zinc-800 rounded-lg flex flex-col gap-2">
+        <div
+          className="mb-3 p-3 flex flex-col gap-2"
+          style={{
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.07)',
+            borderRadius: '1rem',
+          }}
+        >
           <input
             placeholder="Goal name"
             value={form.name}
             onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-            className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-xs text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500"
+            onFocus={() => setFocusedField('name')}
+            onBlur={() => setFocusedField(null)}
+            style={focusStyle('name')}
           />
           <input
             placeholder="Target amount (£)"
             type="number"
             value={form.target}
             onChange={e => setForm(f => ({ ...f, target: e.target.value }))}
-            className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-xs text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500"
+            onFocus={() => setFocusedField('target')}
+            onBlur={() => setFocusedField(null)}
+            style={focusStyle('target')}
           />
           <input
             placeholder="Target date (optional)"
             type="date"
             value={form.target_date}
             onChange={e => setForm(f => ({ ...f, target_date: e.target.value }))}
-            className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-xs text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500"
+            onFocus={() => setFocusedField('date')}
+            onBlur={() => setFocusedField(null)}
+            style={focusStyle('date')}
           />
           {accounts.length > 0 && (
             <select
               value={form.linked_account_id}
               onChange={e => setForm(f => ({ ...f, linked_account_id: e.target.value }))}
-              className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-zinc-500"
+              onFocus={() => setFocusedField('account')}
+              onBlur={() => setFocusedField(null)}
+              style={focusStyle('account')}
             >
               <option value="">Link to account (optional)</option>
               {accounts.map(a => (
@@ -96,19 +144,35 @@ export default function SavingsGoals({ goals, accounts, avgMonthlySavings, onCre
               ))}
             </select>
           )}
-          <div className="flex gap-1">
+          {/* Colour picker */}
+          <div className="flex gap-1.5">
             {COLOURS.map(c => (
               <button
                 key={c}
                 onClick={() => setForm(f => ({ ...f, colour: c }))}
-                className={`w-4 h-4 rounded-full ${COLOUR_BAR[c]} ${form.colour === c ? 'ring-2 ring-white ring-offset-1 ring-offset-zinc-900' : ''}`}
+                style={{
+                  width: '16px',
+                  height: '16px',
+                  borderRadius: '50%',
+                  background: COLOUR_HEX[c],
+                  outline: form.colour === c ? `2px solid ${COLOUR_HEX[c]}` : 'none',
+                  outlineOffset: '2px',
+                  border: 'none',
+                  cursor: 'pointer',
+                }}
               />
             ))}
           </div>
           <button
             onClick={handleCreate}
             disabled={saving || !form.name || !form.target}
-            className="w-full py-1.5 text-xs font-medium bg-zinc-100 text-zinc-900 rounded hover:bg-white transition-colors disabled:opacity-50"
+            className="w-full py-1.5 text-xs font-medium rounded transition-colors disabled:opacity-50"
+            style={{
+              background: 'rgba(0,212,170,0.15)',
+              border: '1px solid rgba(0,212,170,0.3)',
+              color: '#00d4aa',
+              borderRadius: '0.5rem',
+            }}
           >
             {saving ? 'Saving…' : 'Add Goal'}
           </button>
@@ -116,7 +180,7 @@ export default function SavingsGoals({ goals, accounts, avgMonthlySavings, onCre
       )}
 
       {!goals.length && !adding && (
-        <p className="text-xs text-zinc-600">No goals yet. Add one to track your savings.</p>
+        <p className="text-xs" style={{ color: '#334155' }}>No goals yet. Add one to track your savings.</p>
       )}
 
       <div className="flex flex-col gap-2">
@@ -124,27 +188,61 @@ export default function SavingsGoals({ goals, accounts, avgMonthlySavings, onCre
           const pct = Math.min(100, Math.round((goal.current_pence / goal.target_pence) * 100))
           const remaining = goal.target_pence - goal.current_pence
           const monthsToGo = avgMonthlySavings > 0 ? remaining / avgMonthlySavings : null
-          const barClass = COLOUR_BAR[goal.colour] ?? 'bg-emerald-500'
+          const barColour = COLOUR_HEX[goal.colour as GoalColour] ?? COLOUR_HEX.emerald
 
           return (
-            <div key={goal.id} className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2.5">
+            <div
+              key={goal.id}
+              className="px-3 py-2.5"
+              style={{
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.07)',
+                borderRadius: '1rem',
+              }}
+            >
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs font-medium text-zinc-200">{goal.name}</span>
+                <span className="text-xs font-medium" style={{ color: '#e2e8f0' }}>{goal.name}</span>
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] text-zinc-500">{pct}%</span>
-                  <button onClick={() => onDelete(goal.id)} className="text-[10px] text-zinc-700 hover:text-zinc-500">✕</button>
+                  <span className="text-[10px]" style={{ color: '#475569' }}>{pct}%</span>
+                  <button
+                    onClick={() => onDelete(goal.id)}
+                    className="text-[10px] transition-colors"
+                    style={{ color: '#334155' }}
+                    onMouseEnter={e => (e.currentTarget.style.color = '#475569')}
+                    onMouseLeave={e => (e.currentTarget.style.color = '#334155')}
+                  >
+                    ✕
+                  </button>
                 </div>
               </div>
-              <div className="w-full bg-zinc-800 rounded-full h-1.5 mb-1.5 overflow-hidden">
-                <div className={`h-full rounded-full transition-all ${barClass}`} style={{ width: `${pct}%` }} />
+              {/* Progress bar */}
+              <div
+                className="w-full h-1.5 mb-1.5 overflow-hidden rounded-full"
+                style={{ background: 'rgba(255,255,255,0.06)' }}
+              >
+                <div
+                  className="h-full rounded-full transition-all"
+                  style={{ width: `${pct}%`, background: barColour }}
+                />
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-[10px] text-zinc-500">{fmt(goal.current_pence)} of {fmt(goal.target_pence)}</span>
+                <span className="text-[10px]" style={{ color: '#475569' }}>
+                  {fmt(goal.current_pence)} of {fmt(goal.target_pence)}
+                </span>
                 {monthsToGo !== null && !goal.completed_at && remaining > 0 && (
-                  <span className="text-[10px] text-zinc-600">~{Math.ceil(monthsToGo)}mo</span>
+                  <span className="text-[10px]" style={{ color: '#334155' }}>~{Math.ceil(monthsToGo)}mo remaining</span>
                 )}
                 {goal.completed_at && (
-                  <span className="text-[10px] text-emerald-400">✓ Done</span>
+                  <span
+                    className="text-[10px] px-1.5 py-0.5 rounded-full"
+                    style={{
+                      color: '#00d4aa',
+                      background: 'rgba(0,212,170,0.12)',
+                      border: '1px solid rgba(0,212,170,0.2)',
+                    }}
+                  >
+                    ✓ Done
+                  </span>
                 )}
               </div>
             </div>

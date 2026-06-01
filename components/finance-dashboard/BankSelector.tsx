@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { SUPPORTED_BANKS } from '@/lib/finance'
 
 interface Props {
@@ -8,17 +9,51 @@ interface Props {
 }
 
 export default function BankSelector({ onSelect, loading }: Props) {
+  const [hovered, setHovered] = useState<string | null>(null)
+
   return (
-    <div className="grid grid-cols-2 gap-2 w-full">
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: '0.5rem',
+        width: '100%',
+      }}
+    >
       {SUPPORTED_BANKS.map(bank => (
         <button
           key={bank.id}
           onClick={() => onSelect(bank.id)}
           disabled={loading}
-          className="flex items-center gap-2 px-3 py-2.5 bg-zinc-900 border border-zinc-800 rounded-lg text-sm text-zinc-300 hover:text-zinc-100 hover:border-zinc-600 hover:bg-zinc-800 transition-all disabled:opacity-50 text-left"
+          onMouseEnter={() => setHovered(bank.id)}
+          onMouseLeave={() => setHovered(null)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            padding: '0.625rem 0.75rem',
+            background: hovered === bank.id ? 'rgba(0,212,170,0.1)' : 'rgba(255,255,255,0.04)',
+            border: `1px solid ${hovered === bank.id ? '#00d4aa' : 'rgba(255,255,255,0.08)'}`,
+            borderRadius: '0.625rem',
+            fontSize: '0.8125rem',
+            color: hovered === bank.id ? '#e2e8f0' : '#94a3b8',
+            cursor: loading ? 'not-allowed' : 'pointer',
+            opacity: loading ? 0.5 : 1,
+            textAlign: 'left',
+            transition: 'background 0.15s, border-color 0.15s, color 0.15s',
+            width: '100%',
+          }}
         >
-          <span className="text-base">🏦</span>
-          <span className="truncate">{bank.name}</span>
+          <span style={{ fontSize: '1rem', flexShrink: 0 }}>{bank.emoji ?? '🏦'}</span>
+          <span
+            style={{
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {bank.name}
+          </span>
         </button>
       ))}
     </div>
