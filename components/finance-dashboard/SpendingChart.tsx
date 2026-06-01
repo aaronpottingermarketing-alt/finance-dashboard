@@ -48,22 +48,21 @@ export default function SpendingChart({ data }: Props) {
         {data.map((bar, i) => {
           const heightPct = Math.max((bar.total_pence / maxVal) * 100, 4)
           return (
-            <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', height: '100%', justifyContent: 'flex-end' }}>
-              {/* Value label above current bar */}
-              {bar.isCurrent && (
-                <div style={{
-                  background: '#00d4aa',
-                  color: '#000',
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  padding: '3px 8px',
-                  borderRadius: '20px',
-                  whiteSpace: 'nowrap',
-                  flexShrink: 0,
-                }}>
-                  {fmt(bar.total_pence)}
-                </div>
-              )}
+            <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', height: '100%', justifyContent: 'flex-end' }}>
+              {/* Value label above every bar */}
+              <div style={{
+                background: bar.isCurrent ? '#00d4aa' : 'rgba(255,255,255,0.08)',
+                color: bar.isCurrent ? '#000' : '#94a3b8',
+                fontSize: '11px',
+                fontWeight: 600,
+                padding: '2px 7px',
+                borderRadius: '20px',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+                visibility: bar.total_pence > 0 ? 'visible' : 'hidden',
+              }}>
+                {fmt(bar.total_pence)}
+              </div>
 
               {/* Bar */}
               <div style={{
@@ -71,10 +70,8 @@ export default function SpendingChart({ data }: Props) {
                 height: `${heightPct}%`,
                 background: bar.isCurrent
                   ? 'linear-gradient(180deg, #00d4aa 0%, #00a884 100%)'
-                  : 'rgba(255,255,255,0.08)',
+                  : 'rgba(255,255,255,0.12)',
                 borderRadius: '8px 8px 4px 4px',
-                position: 'relative',
-                transition: 'height 0.3s ease',
                 flexShrink: 0,
                 boxShadow: bar.isCurrent ? '0 0 20px rgba(0,212,170,0.3)' : 'none',
               }} />
@@ -83,7 +80,7 @@ export default function SpendingChart({ data }: Props) {
               <span style={{
                 fontSize: '12px',
                 fontWeight: bar.isCurrent ? 700 : 400,
-                color: bar.isCurrent ? '#00d4aa' : '#475569',
+                color: bar.isCurrent ? '#00d4aa' : '#64748b',
                 flexShrink: 0,
               }}>
                 {bar.label}
