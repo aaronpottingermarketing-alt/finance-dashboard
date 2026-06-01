@@ -1,3 +1,5 @@
+export const runtime = 'edge'
+
 import { NextResponse } from 'next/server'
 
 const LIVE_BASE = 'https://live.trading212.com/api/v0'

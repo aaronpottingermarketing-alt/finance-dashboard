@@ -1,3 +1,5 @@
+export const runtime = 'edge'
+
 import { NextResponse } from 'next/server'
 import { financeSupabase, buildBillSchedule } from '@/lib/finance'
 import type { FinanceTransaction } from '@/components/finance-dashboard/types'

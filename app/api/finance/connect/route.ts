@@ -1,3 +1,5 @@
+export const runtime = 'edge'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { randomBytes } from 'crypto'
 import { buildTrueLayerAuthUrl } from '@/lib/finance'
