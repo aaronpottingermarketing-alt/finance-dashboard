@@ -174,13 +174,26 @@ export function useFinanceDashboard() {
   const sync = useCallback(async () => {
     setSyncing(true)
     try {
-      await fetch('/api/finance/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
+      // Sync each bank connection sequentially so each gets its own timeout window
+      const conns = connections.filter(c => c.status === 'active')
+      if (conns.length === 0) {
+        // Fall back to syncing all at once if no connections loaded yet
+        await fetch('/api/finance/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
+      } else {
+        for (const conn of conns) {
+          await fetch('/api/finance/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ connection_id: conn.id }),
+          })
+        }
+      }
       await Promise.all([loadAccounts(), loadTransactions(selectedMonth), loadAllTransactions(), loadNetWorth(), loadBills(), loadPriceAlerts(), loadGoals()])
       setLastSynced(new Date())
     } finally {
       setSyncing(false)
     }
-  }, [loadAccounts, loadTransactions, loadAllTransactions, loadNetWorth, loadBills, loadPriceAlerts, loadGoals, selectedMonth])
+  }, [connections, loadAccounts, loadTransactions, loadAllTransactions, loadNetWorth, loadBills, loadPriceAlerts, loadGoals, selectedMonth])
 
   const connectBank = useCallback(async (institutionId: string) => {
     const res = await fetch('/api/finance/connect', {
