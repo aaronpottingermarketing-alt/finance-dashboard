@@ -174,20 +174,66 @@ export async function tlFetch(connectionId: string, path: string): Promise<Respo
 // ─── Transaction categorisation ───────────────────────────────────────────────
 
 const CATEGORY_RULES: { pattern: RegExp; category: TransactionCategory }[] = [
-  { pattern: /deliveroo|uber\s*eats|just\s*eat|mcdonald|kfc|nandos|costa|greggs|pret|subway|domino|pizza|burger king|wagamama|itsu/i, category: 'food' },
-  { pattern: /netflix|spotify|amazon\s*prime|disney\+?|apple\s*(tv|music|one)|patreon|youtube\s*premium|now\s*tv/i, category: 'subscriptions' },
-  { pattern: /gym|membership|fitness|puregym|david lloyd|anytime fitness/i, category: 'subscriptions' },
-  { pattern: /tfl|national\s*rail|trainline|govia|avanti|crosscountry|uber(?!\s*eats)|bolt|lyft|bus\s*pass|oyster|contactless\s*travel/i, category: 'transport' },
-  { pattern: /amazon(?!\s*prime)|asos|zara|next\s|ebay|etsy|h&m|primark|topshop|boohoo|shein|vinted|depop|argos|currys/i, category: 'shopping' },
-  { pattern: /sky\s|^bt\s|virgin\s*media|vodafone|ee\s|o2\s|three\s*uk|broadband|council\s*tax|water\s*(rates|bill)|electricity|gas\s*bill|sse\s|eon\s|octopus\s*energy|british\s*gas/i, category: 'bills' },
-  { pattern: /pharmacy|boots(?!\s*optician)|superdrug|nhs|dentist|optician|specsavers|vision\s*express|lloyds\s*pharmacy|chemist/i, category: 'health' },
-  { pattern: /salary|payroll|wages|bacs\s*credit|direct\s*credit|faster\s*payment\s*(received|in)|standing\s*order\s*(credit|in)/i, category: 'income' },
-  { pattern: /transfer|sent\s*to|received\s*from|payment\s*to|standing\s*order(?!\s*(credit|in))/i, category: 'transfers' },
+  // ── Income (check first — BACS credits, salary, etc.) ──
+  { pattern: /salary|payroll|wages|bacs\s*credit|direct\s*credit|faster\s*payment\s*(received|in)|standing\s*order\s*(credit|in)|employer|hmrc.*repay|tax\s*credit|universal\s*credit|benefits|pension/i, category: 'income' },
+
+  // ── Transfers (internal moves — check before bills/shopping) ──
+  { pattern: /monzo|starling|revolut|wise|transferwise|barclays\s*(transfer|savings)|savings\s*transfer|move\s*to|sent\s*to\s*(self|me)|own\s*account|inter.?account|internal\s*transfer/i, category: 'transfers' },
+
+  // ── Fixed bills (utilities, rent, phone, insurance) ──
+  { pattern: /council\s*tax|rent\s*(payment|due)|mortgage|letting\s*agent/i, category: 'bills' },
+  { pattern: /octopus|british\s*gas|eon\s|sse\s|bulb|edf|ovo\s*energy|n\s*power|scottish\s*power|electricity|gas\s*(bill|direct)|water\s*(rates|authority|services|bill)|thames\s*water|anglian\s*water|severn\s*trent|yorkshire\s*water/i, category: 'bills' },
+  { pattern: /vodafone|ee\s*direct|o2\s|three\s*(uk|mobile)|sky\s*(mobile|talk|broadband|digital)|bt\s*(direct|group|internet)|virgin\s*media|talktalk|plusnet|broadband/i, category: 'bills' },
+  { pattern: /insurance|aviva|admiral|churchill|direct\s*line|hastings|legal\s*&\s*general|axa|zurich|vitality|bupa|private\s*medical|pet\s*plan|life\s*assurance|critical\s*illness/i, category: 'bills' },
+  { pattern: /tv\s*licen[cs]e|bbc\s*licen[cs]e/i, category: 'bills' },
+
+  // ── Subscriptions (recurring, fixed amount, digital services) ──
+  { pattern: /netflix|spotify|apple\s*(tv\+?|music|one|arcade|icloud|subscri)|disney\+?|amazon\s*prime|now\s*tv|paramount\+?|discovery\+?|apple\.com\/bill|itunes|google\s*(one|play\s*pass)|youtube\s*premium|twitch|patreon/i, category: 'subscriptions' },
+  { pattern: /adobe|microsoft\s*365|office\s*365|dropbox|icloud|onedrive|google\s*storage|notion|canva\s*pro|semrush|ahrefs|slack|zoom|lastpass|1password|nordvpn|expressvpn/i, category: 'subscriptions' },
+  { pattern: /puregym|david\s*lloyd|virgin\s*active|anytime\s*fitness|the\s*gym|planet\s*fitness|gym\s*membership|fitness\s*first|leisure\s*centre|swimming\s*pool\s*memb/i, category: 'subscriptions' },
+  { pattern: /duolingo|headspace|calm\s*app|strava|myfitnesspal|audible|kindle\s*unlimited|scribd|skillshare|masterclass|udemy|coursera/i, category: 'subscriptions' },
+
+  // ── Food & drink ──
+  { pattern: /deliveroo|uber\s*eats|just\s*eat|doordash/i, category: 'food' },
+  { pattern: /tesco|sainsbury|asda|morrisons|waitrose|marks\s*&\s*spencer|m&s\s*food|lidl|aldi|co.?op\s*food|iceland\s*foods|ocado|farmfoods/i, category: 'food' },
+  { pattern: /mcdonald|burger\s*king|kfc|nandos|subway|domino|pizza\s*(hut|express)|wagamama|itsu|wasabi|leon\s*rest|five\s*guys|shake\s*shack|greggs|pret|costa|starbucks|caffe\s*nero|nero|eat\s*ltd|pod\s*food|crussh/i, category: 'food' },
+  { pattern: /restaurant|cafe|bakery|deli\s*|sushi|ramen|curry\s*house|indian\s*take|chinese\s*take|thai\s*rest|bistro|brasserie|pub\s*food|dining/i, category: 'food' },
+
+  // ── Transport ──
+  { pattern: /tfl\s|transport\s*for\s*london|oyster|contactless.*rail|london\s*underground/i, category: 'transport' },
+  { pattern: /national\s*rail|trainline|avanti|govia|southeastern|thameslink|great\s*western|cross\s*country|chiltern\s*rail|c2c\s*rail|hull\s*trains|lumo|lner|transpennine|northern\s*rail|merseyrail|scotrail|arriva\s*train/i, category: 'transport' },
+  { pattern: /uber(?!\s*eats)|bolt\s*trip|lyft|addison\s*lee|black\s*cab|taxi(?!\s*rank)|ola\s*cab|free\s*now/i, category: 'transport' },
+  { pattern: /bus\s*(pass|ticket|fare)|national\s*express|megabus|stagecoach|first\s*bus|arriva\s*bus|go\s*ahead|transdev/i, category: 'transport' },
+  { pattern: /easyjet|ryanair|british\s*airways|jet2|tui\s*air|virgin\s*atlantic|lufthansa|emirates|fly\s*bmi|flybe|wizz\s*air|loganair/i, category: 'transport' },
+  { pattern: /parking\s*(charge|fine|ltd)|ncp\s*park|q.?park|ringgo|justpark|rmsec|dvla|driving\s*licen/i, category: 'transport' },
+  { pattern: /enterprise\s*rent|hertz|avis\s*car|europcar|zipcar|enterprise\s*car|sixt\s*rent/i, category: 'transport' },
+
+  // ── Shopping ──
+  { pattern: /amazon(?!.*prime)|ebay|etsy|vinted|depop|preloved/i, category: 'shopping' },
+  { pattern: /asos|zara|h&m|primark|topshop|topman|next\s*plc|new\s*look|river\s*island|boohoo|prettylittlething|shein|missguided|fashion\s*nova|superdry|jack\s*jones|fatface|white\s*stuff|joules|seasalt|hobbs|phase\s*eight/i, category: 'shopping' },
+  { pattern: /argos|currys|ao\.com|john\s*lewis|very\.co|littlewoods|lakeland|dunelm|ikea|b&q|screwfix|wickes|homebase|robert\s*dyas|wilko/i, category: 'shopping' },
+  { pattern: /apple\s*store(?!.*subscri)|apple\.com(?!.*icloud|.*bill)|samsung\s*store|microsoft\s*store|game\s*digital|hmv\s*|cex\s*|maplin/i, category: 'shopping' },
+  { pattern: /boots(?!\s*(advantage|subscri))|superdrug|holland\s*&\s*barrett|the\s*body\s*shop|lush\s*ltd|elemis|kiehl/i, category: 'shopping' },
+
+  // ── Entertainment ──
+  { pattern: /cinema|cineworld|odeon|vue\s*cinema|picturehouse|curzon|showcase\s*cin/i, category: 'entertainment' },
+  { pattern: /ticketmaster|see\s*tickets|eventbrite|skiddle|dice\.fm|songkick|resident\s*advisor|viagogo|stubhub/i, category: 'entertainment' },
+  { pattern: /national\s*trust|english\s*heritage|historic\s*england|rhs\s*|science\s*museum|tate\s*|british\s*museum|v&a\s*|natural\s*history/i, category: 'entertainment' },
+  { pattern: /steam\s*games|playstation|xbox\s*(live|game)|nintendo|epic\s*games|ea\s*play|ubisoft|activision/i, category: 'entertainment' },
+  { pattern: /betting|bet365|betfair|william\s*hill|paddy\s*power|coral\s*bet|sky\s*bet|ladbrokes|unibet|888\s*sport|betway|boylesports/i, category: 'entertainment' },
+  { pattern: /bowling|laser\s*quest|trampoline\s*park|go\s*ape|escape\s*room|mini\s*golf|crazy\s*golf|paintball/i, category: 'entertainment' },
+
+  // ── Health ──
+  { pattern: /nhs\s*|gp\s*surgery|hospital\s*|pharmacy|chemist|lloyds\s*pharm|boots\s*pharm|superdrug\s*pharm|rowlands\s*pharm|well\s*pharm/i, category: 'health' },
+  { pattern: /dentist|dental\s*|orthodont|optician|specsavers|vision\s*express|vision\s*direct|glasses\s*direct|contact\s*lens/i, category: 'health' },
+  { pattern: /physio|chiropract|osteopath|counsell|therapist|psycholog|private\s*clinic|private\s*health|nuffield\s*health|bupa\s*clinic/i, category: 'health' },
 ]
 
 export function categoriseTransaction(description: string): TransactionCategory {
-  const match = CATEGORY_RULES.find(r => r.pattern.test(description))
-  return match?.category ?? 'other'
+  for (const rule of CATEGORY_RULES) {
+    if (rule.pattern.test(description)) return rule.category
+  }
+  return 'other'
 }
 
 // ─── Subscription detection ───────────────────────────────────────────────────

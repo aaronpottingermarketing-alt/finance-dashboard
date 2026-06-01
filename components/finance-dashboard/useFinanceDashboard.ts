@@ -74,7 +74,7 @@ export function useFinanceDashboard() {
 
   const loadTransactions = useCallback(async (month: string) => {
     const { from, to } = monthRange(month)
-    const res = await fetch(`/api/finance/transactions?from=${from}&to=${to}&limit=500`)
+    const res = await fetch(`/api/finance/transactions?from=${from}&to=${to}&limit=2000`)
     if (!res.ok) return
     const data = await res.json()
     setTransactions(data)
@@ -512,6 +512,7 @@ export function useFinanceDashboard() {
     portfolio,
     portfolioLoading,
     loadPortfolio,
+    loadAllTransactions,
 
     // Actions
     sync,

@@ -120,7 +120,7 @@ export default function DetailDashboard({ fd }: Props) {
             <BillCalendar bills={fd.bills} month={fd.selectedMonth} />
           )}
           {fd.detailTab === 'transactions' && (
-            <TransactionList transactions={fd.transactions} />
+            <TransactionList transactions={fd.transactions} onRecategorise={async () => { await fd.loadAllTransactions() }} />
           )}
         </div>
       </div>
