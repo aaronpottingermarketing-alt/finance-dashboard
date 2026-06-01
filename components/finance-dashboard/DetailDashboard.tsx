@@ -57,7 +57,7 @@ export default function DetailDashboard({ fd }: Props) {
       <div
         style={{
           flex: 1,
-          overflow: 'hidden',
+          overflowY: 'auto',
           padding: '1.25rem',
           display: 'flex',
           flexDirection: 'column',
@@ -111,8 +111,8 @@ export default function DetailDashboard({ fd }: Props) {
           })}
         </div>
 
-        {/* Tab content — fills remaining space */}
-        <div style={{ flex: 1, overflow: fd.detailTab === 'bills' ? 'hidden' : 'auto', minHeight: 0 }}>
+        {/* Tab content */}
+        <div style={{ minHeight: 0 }}>
           {fd.detailTab === 'spending' && (
             <CategoryBreakdown spendByCategory={spendByCategory} />
           )}
