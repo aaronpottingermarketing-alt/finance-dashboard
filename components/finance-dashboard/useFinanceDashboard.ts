@@ -81,8 +81,8 @@ export function useFinanceDashboard() {
   }, [])
 
   const loadAllTransactions = useCallback(async () => {
-    const from = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-    const res = await fetch(`/api/finance/transactions?from=${from}&limit=1000`)
+    const from = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    const res = await fetch(`/api/finance/transactions?from=${from}&limit=5000`)
     if (!res.ok) return
     const data = await res.json()
     setAllTransactions(data)
