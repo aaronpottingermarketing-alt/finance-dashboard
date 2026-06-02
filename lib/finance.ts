@@ -195,13 +195,17 @@ const CATEGORY_RULES: { pattern: RegExp; category: TransactionCategory }[] = [
 
   // ── Food & drink ──
   { pattern: /deliveroo|uber\s*eats|just\s*eat|doordash/i, category: 'food' },
-  { pattern: /tesco|sainsbury|asda|morrisons|waitrose|marks\s*&\s*spencer|m&s\s*food|lidl|aldi|co.?op\s*food|iceland\s*foods|ocado|farmfoods/i, category: 'food' },
+  { pattern: /tesco|sainsbury|asda|morrisons|waitrose|marks\s*&\s*spencer|m&s\s*(food|simply)|simply\s*food|lidl|aldi|co.?op\s*food|iceland\s*foods|ocado|farmfoods/i, category: 'food' },
+  { pattern: /spar\s*|costcutter|budgens|londis|nisa\s*local|premier\s*store|one\s*stop\s*store/i, category: 'food' },
+  { pattern: /ssp\s*|upper\s*crust|ritazza|caffe\s*select|wh\s*smith.*food|omnicom.*dining|staff\s*dining|canteen|vending|selecta\s*sas/i, category: 'food' },
   { pattern: /mcdonald|burger\s*king|kfc|nandos|subway|domino|pizza\s*(hut|express)|wagamama|itsu|wasabi|leon\s*rest|five\s*guys|shake\s*shack|greggs|pret|costa|starbucks|caffe\s*nero|nero|eat\s*ltd|pod\s*food|crussh/i, category: 'food' },
+  { pattern: /giuseppe|trattoria|osteria|taverna|ristorante|aguacate|avocado|brunch|breakfast\s*club/i, category: 'food' },
   { pattern: /restaurant|cafe|bakery|deli\s*|sushi|ramen|curry\s*house|indian\s*take|chinese\s*take|thai\s*rest|bistro|brasserie|pub\s*food|dining/i, category: 'food' },
 
   // ── Transport ──
   { pattern: /tfl\s|transport\s*for\s*london|oyster|contactless.*rail|london\s*underground/i, category: 'transport' },
-  { pattern: /national\s*rail|trainline|avanti|govia|southeastern|thameslink|great\s*western|cross\s*country|chiltern\s*rail|c2c\s*rail|hull\s*trains|lumo|lner|transpennine|northern\s*rail|merseyrail|scotrail|arriva\s*train/i, category: 'transport' },
+  { pattern: /national\s*rail|trainline|avanti|govia|southeastern|southern\s*rail|thameslink|great\s*western|cross\s*country|chiltern\s*rail|c2c\s*rail|hull\s*trains|lumo|lner|transpennine|northern\s*rail|merseyrail|scotrail|arriva\s*train/i, category: 'transport' },
+  { pattern: /navigo|ratp|transilien|metro\s*ticket|oyster\s*top/i, category: 'transport' },
   { pattern: /uber(?!\s*eats)|bolt\s*trip|lyft|addison\s*lee|black\s*cab|taxi(?!\s*rank)|ola\s*cab|free\s*now/i, category: 'transport' },
   { pattern: /bus\s*(pass|ticket|fare)|national\s*express|megabus|stagecoach|first\s*bus|arriva\s*bus|go\s*ahead|transdev/i, category: 'transport' },
   { pattern: /easyjet|ryanair|british\s*airways|jet2|tui\s*air|virgin\s*atlantic|lufthansa|emirates|fly\s*bmi|flybe|wizz\s*air|loganair/i, category: 'transport' },
