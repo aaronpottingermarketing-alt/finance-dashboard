@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
+import ReactMarkdown from 'react-markdown'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -287,7 +288,7 @@ export default function FinanceChat() {
                 </div>
               )}
               <div style={{
-                maxWidth: '80%',
+                maxWidth: msg.role === 'user' ? '70%' : '100%',
                 padding: '0.75rem 1rem',
                 borderRadius: msg.role === 'user' ? '1rem 1rem 0.25rem 1rem' : '1rem 1rem 1rem 0.25rem',
                 background: msg.role === 'user'
@@ -297,14 +298,44 @@ export default function FinanceChat() {
                   ? '1px solid rgba(0,212,170,0.2)'
                   : '1px solid rgba(255,255,255,0.07)',
                 fontSize: 14,
-                lineHeight: 1.6,
+                lineHeight: 1.7,
                 color: msg.role === 'user' ? '#e2e8f0' : '#cbd5e1',
-                whiteSpace: 'pre-wrap',
                 wordBreak: 'break-word',
               }}>
-                {msg.content}
+                {msg.role === 'user' ? (
+                  msg.content
+                ) : (
+                  <ReactMarkdown
+                    components={{
+                      p: ({ children }) => <p style={{ margin: '0 0 0.6em', lineHeight: 1.7 }}>{children}</p>,
+                      strong: ({ children }) => <strong style={{ color: '#e2e8f0', fontWeight: 700 }}>{children}</strong>,
+                      em: ({ children }) => <em style={{ color: '#a78bfa' }}>{children}</em>,
+                      ul: ({ children }) => <ul style={{ margin: '0.4em 0 0.6em', paddingLeft: '1.25rem' }}>{children}</ul>,
+                      ol: ({ children }) => <ol style={{ margin: '0.4em 0 0.6em', paddingLeft: '1.25rem' }}>{children}</ol>,
+                      li: ({ children }) => <li style={{ margin: '0.2em 0', lineHeight: 1.6 }}>{children}</li>,
+                      table: ({ children }) => (
+                        <div style={{ overflowX: 'auto', margin: '0.75em 0' }}>
+                          <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 13 }}>{children}</table>
+                        </div>
+                      ),
+                      th: ({ children }) => (
+                        <th style={{ padding: '0.4rem 0.75rem', background: 'rgba(255,255,255,0.06)', color: '#e2e8f0', fontWeight: 600, textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>{children}</th>
+                      ),
+                      td: ({ children }) => (
+                        <td style={{ padding: '0.4rem 0.75rem', borderBottom: '1px solid rgba(255,255,255,0.05)', color: '#cbd5e1' }}>{children}</td>
+                      ),
+                      code: ({ children }) => (
+                        <code style={{ background: 'rgba(255,255,255,0.06)', padding: '0.1em 0.4em', borderRadius: 4, fontSize: 13, color: '#00d4aa' }}>{children}</code>
+                      ),
+                      h3: ({ children }) => <h3 style={{ fontSize: 15, fontWeight: 700, color: '#e2e8f0', margin: '0.75em 0 0.3em' }}>{children}</h3>,
+                      h4: ({ children }) => <h4 style={{ fontSize: 14, fontWeight: 600, color: '#e2e8f0', margin: '0.6em 0 0.25em' }}>{children}</h4>,
+                    }}
+                  >
+                    {msg.content}
+                  </ReactMarkdown>
+                )}
                 {msg.streaming && (
-                  <span style={{ color: '#00d4aa', animation: 'pulse 1s infinite' }}> ▌</span>
+                  <span style={{ color: '#00d4aa' }}> ▌</span>
                 )}
               </div>
             </div>
