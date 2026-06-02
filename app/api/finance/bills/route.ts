@@ -1,9 +1,7 @@
-export const dynamic = 'force-dynamic'
-
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { financeSupabase } from '@/lib/finance'
 
-export async function GET() {
+export async function GET(_req: NextRequest) {
   const sb = financeSupabase()
 
   const cutoff = new Date()
