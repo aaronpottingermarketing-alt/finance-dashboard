@@ -120,9 +120,15 @@ export function useFinanceDashboard() {
     const cutoff = new Date()
     cutoff.setDate(cutoff.getDate() - 90)
     const from = cutoff.toISOString().split('T')[0]
-    const res = await fetch(`/api/finance/transactions?category=bills&from=${from}&limit=1000`)
-    if (!res.ok) return
-    const transactions: FinanceTransaction[] = await res.json()
+
+    const [billsRes, subsRes] = await Promise.all([
+      fetch(`/api/finance/transactions?category=bills&from=${from}&limit=1000`),
+      fetch(`/api/finance/transactions?category=subscriptions&from=${from}&limit=1000`),
+    ])
+
+    const billsTxns: FinanceTransaction[] = billsRes.ok ? await billsRes.json() : []
+    const subsTxns: FinanceTransaction[] = subsRes.ok ? await subsRes.json() : []
+    const transactions = [...billsTxns, ...subsTxns]
 
     const byMerchant: Record<string, BillScheduleItem> = {}
     for (const t of transactions) {
