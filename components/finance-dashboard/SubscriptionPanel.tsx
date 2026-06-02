@@ -10,11 +10,26 @@ function fmt(pence: number): string {
   return (Math.abs(pence) / 100).toLocaleString('en-GB', { style: 'currency', currency: 'GBP' })
 }
 
+// Strip bank reference codes from descriptions so "DAVID LLOYD LEISUR 080925DABG31 DDR"
+// and "DAVID LLOYD LEISUR 080925DABG31B DDR" both deduplicate to "David Lloyd Leisur"
+function cleanName(t: FinanceTransaction): string {
+  if (t.merchant_name) return t.merchant_name
+  const words = t.description.split(/\s+/)
+  // First word that looks like a reference code (contains digits and is long)
+  const refIdx = words.findIndex(w => /\d/.test(w) && w.length > 6)
+  const meaningful = refIdx > 0 ? words.slice(0, refIdx) : words
+  return meaningful.map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+}
+
+function merchantKey(t: FinanceTransaction): string {
+  return cleanName(t).toLowerCase().trim()
+}
+
 export default function SubscriptionPanel({ subscriptions }: Props) {
-  // Deduplicate by merchant — keep most recent
+  // Deduplicate by cleaned merchant name — keep most recent
   const byMerchant = new Map<string, FinanceTransaction>()
   for (const t of subscriptions) {
-    const key = t.merchant_name ?? t.description
+    const key = merchantKey(t)
     const existing = byMerchant.get(key)
     if (!existing || t.booking_date > existing.booking_date) {
       byMerchant.set(key, t)
@@ -77,7 +92,7 @@ export default function SubscriptionPanel({ subscriptions }: Props) {
               <div className="flex items-center gap-2 min-w-0">
                 <span className="text-sm shrink-0" style={{ color: '#a78bfa' }}>↻</span>
                 <span className="text-xs truncate" style={{ color: '#e2e8f0' }}>
-                  {t.merchant_name ?? t.description}
+                  {cleanName(t)}
                 </span>
               </div>
               <span
