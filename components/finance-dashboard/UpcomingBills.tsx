@@ -49,16 +49,18 @@ export default function UpcomingBills({ bills }: Props) {
       }
       return { ...bill, daysUntil, date }
     })
-    .filter(b => b.daysUntil >= 0 && b.daysUntil <= 14)
+    .filter(b => b.daysUntil >= 0 && b.daysUntil <= daysInMonth - currentDay)
     .sort((a, b) => a.daysUntil - b.daysUntil)
 
   const totalUpcoming = upcoming.reduce((s, b) => s + b.monthly_pence, 0)
+
+  const monthName = today.toLocaleDateString('en-GB', { month: 'long' })
 
   if (!upcoming.length) {
     return (
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
         <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500 mb-3">Upcoming Bills</p>
-        <p className="text-xs text-zinc-600 text-center py-3">No bills in the next 14 days</p>
+        <p className="text-xs text-zinc-600 text-center py-3">No bills remaining in {monthName}</p>
       </div>
     )
   }
@@ -66,7 +68,7 @@ export default function UpcomingBills({ bills }: Props) {
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
       <div className="flex items-center justify-between mb-4">
-        <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500">Upcoming Bills</p>
+        <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500">Bills — {monthName}</p>
         <span className="text-xs font-semibold text-zinc-300">{fmt(totalUpcoming)} due</span>
       </div>
 
