@@ -230,7 +230,7 @@ export default function FinanceChat() {
 
           {/* Empty state */}
           {isEmpty && (
-            <div style={{ maxWidth: 560, margin: '2rem auto' }}>
+            <div style={{ maxWidth: 680, margin: '2rem auto', width: '100%' }}>
               <p style={{ fontSize: 24, textAlign: 'center', marginBottom: '0.5rem' }}>💬</p>
               <p style={{ fontSize: 18, fontWeight: 700, color: '#e2e8f0', textAlign: 'center', marginBottom: '0.375rem' }}>
                 Ask anything about your finances
@@ -274,8 +274,6 @@ export default function FinanceChat() {
                 display: 'flex',
                 justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
                 marginBottom: '1rem',
-                maxWidth: 720,
-                margin: '0 auto 1rem',
               }}
             >
               {msg.role === 'assistant' && (
