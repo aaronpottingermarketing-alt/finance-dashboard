@@ -79,8 +79,13 @@ export async function POST(req: NextRequest) {
           const txnData = await txnRes.json()
           const rawTxns = txnData.results ?? []
 
+          // Load merchant rules once per account sync
+          const { data: merchantRules } = await sb
+            .from('finance_merchant_rules')
+            .select('merchant_key, category')
+          const rulesMap = new Map((merchantRules ?? []).map(r => [r.merchant_key, r.category]))
+
           for (const raw of rawTxns) {
-            // TrueLayer amounts: positive = credit, negative = debit (in GBP)
             const amountPence = Math.round((raw.amount ?? 0) * 100)
             const description =
               raw.description ??
@@ -88,7 +93,10 @@ export async function POST(req: NextRequest) {
               raw.transaction_information ??
               'Unknown'
             const merchantName = raw.merchant_name ?? raw.meta?.provider_merchant_name ?? null
-            const category = categoriseTransaction(description)
+
+            // Apply merchant rule if exists, otherwise auto-categorise
+            const merchantKey = (merchantName ?? description).toLowerCase().trim()
+            const category = rulesMap.get(merchantKey) ?? categoriseTransaction(description)
 
             const txnRow = {
               account_id: account.id,
