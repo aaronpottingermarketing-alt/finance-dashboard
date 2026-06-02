@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { financeSupabase } from '@/lib/finance'
+import type { FinanceTransaction } from '@/components/finance-dashboard/types'
 
 export async function GET(_req: NextRequest) {
   const sb = financeSupabase()
@@ -10,35 +11,33 @@ export async function GET(_req: NextRequest) {
 
   const { data, error } = await sb
     .from('finance_transactions')
-    .select('merchant_name, description, amount_pence, booking_date')
+    .select('*')
     .lt('amount_pence', 0)
     .eq('category', 'bills')
     .gte('booking_date', cutoffStr)
     .order('booking_date', { ascending: false })
 
-  if (error) {
-    console.error('[bills] query error:', error.message)
-    return NextResponse.json([])
-  }
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // One entry per merchant — most recent transaction wins for day + amount
-  const byMerchant: Record<string, { day_of_month: number; monthly_pence: number; last_charged: string }> = {}
-  for (const t of data ?? []) {
-    const key = (t.merchant_name ?? t.description) as string
-    if (!byMerchant[key]) {
-      byMerchant[key] = {
-        day_of_month: new Date(t.booking_date).getDate(),
-        monthly_pence: Math.abs(t.amount_pence as number),
-        last_charged: t.booking_date as string,
-      }
+  // One entry per merchant — most recent transaction sets the day and amount
+  const byMerchant: Record<string, {
+    merchant_name: string
+    day_of_month: number
+    monthly_pence: number
+    last_charged: string
+  }> = {}
+
+  for (const t of (data ?? []) as FinanceTransaction[]) {
+    const key = t.merchant_name ?? t.description
+    if (byMerchant[key]) continue
+    byMerchant[key] = {
+      merchant_name: key,
+      day_of_month: new Date(t.booking_date).getDate(),
+      monthly_pence: Math.abs(t.amount_pence),
+      last_charged: t.booking_date,
     }
   }
 
-  const bills = Object.entries(byMerchant).map(([merchant_name, rest]) => ({
-    merchant_name,
-    ...rest,
-    source: 'pattern' as const,
-  }))
-
-  return NextResponse.json(bills.sort((a, b) => a.day_of_month - b.day_of_month))
+  const bills = Object.values(byMerchant).sort((a, b) => a.day_of_month - b.day_of_month)
+  return NextResponse.json(bills)
 }
