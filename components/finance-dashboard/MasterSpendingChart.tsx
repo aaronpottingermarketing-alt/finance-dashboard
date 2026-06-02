@@ -4,19 +4,23 @@ import type { TransactionCategory } from './types'
 
 interface MonthData {
   label: string
+  month: string   // 'YYYY-MM'
   isCurrent: boolean
   categories: Partial<Record<TransactionCategory, number>>
   total: number
 }
 
-interface Props { data: MonthData[] }
+interface Props {
+  data: MonthData[]
+  onBarClick?: (month: string) => void
+}
 
 function fmt(pence: number): string {
   if (pence >= 100000) return `£${(pence / 100000).toFixed(1)}k`
   return `£${(pence / 100).toFixed(0)}`
 }
 
-export default function MasterSpendingChart({ data }: Props) {
+export default function MasterSpendingChart({ data, onBarClick }: Props) {
   if (!data.length) return null
 
   const maxVal = Math.max(...data.map(d => d.total), 1)
@@ -34,6 +38,7 @@ export default function MasterSpendingChart({ data }: Props) {
         <div>
           <p style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#475569', marginBottom: '4px' }}>
             Monthly Spend
+            {onBarClick && <span style={{ fontWeight: 400, color: '#334155', marginLeft: '6px', textTransform: 'none', letterSpacing: 0 }}>— click a bar to see transactions</span>}
           </p>
           {currentBar && (
             <p style={{ fontSize: '24px', fontWeight: 700, color: '#e2e8f0', lineHeight: 1 }}>
@@ -49,7 +54,11 @@ export default function MasterSpendingChart({ data }: Props) {
         {data.map((bar, i) => {
           const heightPct = Math.max((bar.total / maxVal) * 100, 4)
           return (
-            <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', height: '100%', justifyContent: 'flex-end' }}>
+            <div
+              key={i}
+              onClick={() => bar.total > 0 && onBarClick?.(bar.month)}
+              style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', height: '100%', justifyContent: 'flex-end', cursor: bar.total > 0 && onBarClick ? 'pointer' : 'default' }}
+            >
               {/* Floating value label above current bar */}
               {bar.isCurrent && (
                 <div style={{

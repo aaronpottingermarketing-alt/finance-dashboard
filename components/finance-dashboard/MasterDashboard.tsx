@@ -39,7 +39,7 @@ function getLastNMonths(allTxns: ReturnType<typeof useFinanceDashboard>['allTran
       categories[t.category] = (categories[t.category] ?? 0) + amt
       total += amt
     }
-    return { label: d.toLocaleString('en-GB', { month: 'short' }), isCurrent: i === n - 1, categories, total }
+    return { label: d.toLocaleString('en-GB', { month: 'short' }), month, isCurrent: i === n - 1, categories, total }
   })
 }
 
@@ -142,8 +142,15 @@ export default function MasterDashboard({ fd }: Props) {
         {/* Spending breakdown pie chart */}
         <CategoryPieChart spendByCategory={spendByCategory} />
 
-        {/* Monthly spend chart */}
-        <MasterSpendingChart data={chartData} />
+        {/* Monthly spend chart — click a bar to drill into that month */}
+        <MasterSpendingChart
+          data={chartData}
+          onBarClick={(month) => {
+            fd.setSelectedMonth(month)
+            fd.setViewMode('detail')
+            fd.setDetailTab('transactions')
+          }}
+        />
 
         {/* Subscription renewal alert — only shows if something renewing soon */}
         <SubscriptionRenewal bills={fd.bills} />
