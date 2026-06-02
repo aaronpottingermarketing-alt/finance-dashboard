@@ -14,14 +14,22 @@ export default function SubscriptionRenewal({ bills }: Props) {
   const today = new Date()
   const todayDay = today.getDate()
 
+  const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+
   // Find bills renewing in the next 7 days, subscription-range only (< £150/month)
   const renewing = bills.filter(b => {
     if (b.monthly_pence >= 15000) return false // above £150 — not a subscription
-    let daysUntil = b.day_of_month - todayDay
-    if (daysUntil < 0) {
-      // already passed this month, check next month — only within 7 days window
-      const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()
-      daysUntil += daysInMonth
+    let daysUntil: number
+    if (b.next_payment_date) {
+      const billDate = new Date(b.next_payment_date)
+      const billMidnight = new Date(billDate.getFullYear(), billDate.getMonth(), billDate.getDate())
+      daysUntil = Math.round((billMidnight.getTime() - todayMidnight.getTime()) / (1000 * 60 * 60 * 24))
+    } else {
+      daysUntil = b.day_of_month - todayDay
+      if (daysUntil < 0) {
+        const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()
+        daysUntil += daysInMonth
+      }
     }
     return daysUntil >= 0 && daysUntil <= 7
   })

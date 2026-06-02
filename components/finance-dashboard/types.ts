@@ -147,6 +147,8 @@ export type BillScheduleItem = {
   day_of_month: number
   monthly_pence: number
   last_charged: string
+  next_payment_date?: string  // exact date from TrueLayer standing orders / direct debits
+  source?: 'standing_order' | 'direct_debit' | 'pattern'
 }
 
 export type MonthSummary = {

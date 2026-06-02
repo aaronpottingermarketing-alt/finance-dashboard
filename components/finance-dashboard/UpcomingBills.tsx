@@ -31,15 +31,25 @@ export default function UpcomingBills({ bills }: Props) {
   const currentDay = today.getDate()
   const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()
 
+  const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+
   const upcoming = bills
     .map(bill => {
-      let daysUntil = bill.day_of_month - currentDay
-      if (daysUntil < 0) daysUntil += daysInMonth
-      const date = new Date(today)
-      date.setDate(today.getDate() + daysUntil)
+      let daysUntil: number
+      let date: Date
+      if (bill.next_payment_date) {
+        date = new Date(bill.next_payment_date)
+        const billMidnight = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+        daysUntil = Math.round((billMidnight.getTime() - todayMidnight.getTime()) / (1000 * 60 * 60 * 24))
+      } else {
+        daysUntil = bill.day_of_month - currentDay
+        if (daysUntil < 0) daysUntil += daysInMonth
+        date = new Date(today)
+        date.setDate(today.getDate() + daysUntil)
+      }
       return { ...bill, daysUntil, date }
     })
-    .filter(b => b.daysUntil <= 14)
+    .filter(b => b.daysUntil >= 0 && b.daysUntil <= 14)
     .sort((a, b) => a.daysUntil - b.daysUntil)
 
   const totalUpcoming = upcoming.reduce((s, b) => s + b.monthly_pence, 0)
