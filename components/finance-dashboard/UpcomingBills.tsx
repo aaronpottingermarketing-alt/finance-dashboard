@@ -97,7 +97,15 @@ export default function UpcomingBills({ bills }: Props) {
                 {getIcon(bill.merchant_name)}
               </span>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-zinc-200 truncate">{bill.merchant_name}</p>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-sm font-medium text-zinc-200 truncate">{bill.merchant_name}</p>
+                  {bill.source === 'standing_order' && (
+                    <span className="shrink-0 text-[9px] font-bold uppercase tracking-wider px-1 py-0.5 rounded bg-blue-500/15 text-blue-400 border border-blue-500/20">SO</span>
+                  )}
+                  {bill.source === 'direct_debit' && (
+                    <span className="shrink-0 text-[9px] font-bold uppercase tracking-wider px-1 py-0.5 rounded bg-violet-500/15 text-violet-400 border border-violet-500/20">DD</span>
+                  )}
+                </div>
                 <p className={`text-[11px] ${isToday ? 'text-red-400 font-semibold' : isTomorrow ? 'text-amber-400' : 'text-zinc-500'}`}>
                   {dayLabel}
                 </p>
