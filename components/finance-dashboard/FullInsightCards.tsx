@@ -103,8 +103,8 @@ function SkeletonCard() {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function FullInsightCards({ analysis, loading, streamText, onRefresh, selectedMonth }: Props) {
-  const [displayMonth] = selectedMonth.split('-').map(Number)
-  const monthLabel = new Date(Number(selectedMonth.split('-')[0]), displayMonth - 1).toLocaleString('en-GB', { month: 'long', year: 'numeric' })
+  const [yearStr, monthStr] = selectedMonth.split('-')
+  const monthLabel = new Date(Number(yearStr), Number(monthStr) - 1).toLocaleString('en-GB', { month: 'long', year: 'numeric' })
 
   return (
     <div className="flex flex-col gap-5">

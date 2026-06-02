@@ -129,22 +129,25 @@ export async function POST(req: NextRequest) {
   const { data: accounts } = await sb.from('finance_accounts').select('*')
   const accs = (accounts ?? []) as FinanceAccount[]
 
-  for (let i = 0; i < 3; i++) {
+  const monthQueries = [0, 1, 2].map(i => {
     const m = priorMonthStr(period, i)
     const { from, to } = monthRange(m)
     const [year, month] = m.split('-').map(Number)
     const label = new Date(year, month - 1).toLocaleString('en-GB', { month: 'long', year: 'numeric' })
-
-    const { data: txns } = await sb
+    return sb
       .from('finance_transactions')
       .select('*')
       .gte('booking_date', from)
       .lte('booking_date', to)
+      .then(({ data: txns }) => ({ label, txns }))
+  })
 
+  const monthResults = await Promise.all(monthQueries)
+  for (const { label, txns } of monthResults) {
     if (txns && txns.length > 0) {
       monthSummaries.push({
         label,
-        summary: buildMonthSummary((txns as FinanceTransaction[]), accs, label),
+        summary: buildMonthSummary(txns as FinanceTransaction[], accs, label),
       })
     }
   }
