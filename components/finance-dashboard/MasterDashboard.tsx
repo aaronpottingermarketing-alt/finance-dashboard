@@ -2,7 +2,6 @@
 
 import type { useFinanceDashboard } from './useFinanceDashboard'
 import NetWorthChart from './NetWorthChart'
-import MasterSpendingChart from './MasterSpendingChart'
 import ImprovementPanel from './ImprovementPanel'
 import UpcomingBills from './UpcomingBills'
 import CashFlowBar from './CashFlowBar'
@@ -11,7 +10,6 @@ import DailyBudget from './DailyBudget'
 import SavingsRateCard from './SavingsRateCard'
 import WeeklyDigest from './WeeklyDigest'
 import SubscriptionRenewal from './SubscriptionRenewal'
-import CategoryPieChart from './CategoryPieChart'
 import type { TransactionCategory } from './types'
 
 type Props = { fd: ReturnType<typeof useFinanceDashboard> }
@@ -139,18 +137,6 @@ export default function MasterDashboard({ fd }: Props) {
           </div>
         </Card>
 
-        {/* Spending breakdown pie chart */}
-        <CategoryPieChart spendByCategory={spendByCategory} />
-
-        {/* Monthly spend chart — click a bar to drill into that month */}
-        <MasterSpendingChart
-          data={chartData}
-          onBarClick={(month) => {
-            fd.setSelectedMonth(month)
-            fd.setViewMode('detail')
-            fd.setDetailTab('transactions')
-          }}
-        />
 
         {/* Subscription renewal alert — only shows if something renewing soon */}
         <SubscriptionRenewal bills={fd.bills} />

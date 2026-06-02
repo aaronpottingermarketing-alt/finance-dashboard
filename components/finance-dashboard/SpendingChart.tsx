@@ -2,12 +2,14 @@
 
 interface MonthBar {
   label: string
+  month: string
   total_pence: number
   isCurrent: boolean
 }
 
 interface Props {
   data: MonthBar[]
+  onBarClick?: (month: string) => void
 }
 
 function fmt(pence: number): string {
@@ -15,7 +17,7 @@ function fmt(pence: number): string {
   return `£${(pence / 100).toFixed(0)}`
 }
 
-export default function SpendingChart({ data }: Props) {
+export default function SpendingChart({ data, onBarClick }: Props) {
   if (!data.length) return null
 
   const maxVal = Math.max(...data.map(d => d.total_pence), 1)
@@ -48,7 +50,10 @@ export default function SpendingChart({ data }: Props) {
         {data.map((bar, i) => {
           const heightPct = Math.max((bar.total_pence / maxVal) * 100, 4)
           return (
-            <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', height: '100%', justifyContent: 'flex-end' }}>
+            <div key={i}
+              onClick={() => bar.total_pence > 0 && onBarClick?.(bar.month)}
+              style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', height: '100%', justifyContent: 'flex-end', cursor: bar.total_pence > 0 && onBarClick ? 'pointer' : 'default' }}
+            >
               {/* Value label above every bar */}
               <div style={{
                 background: bar.isCurrent ? '#00d4aa' : 'rgba(255,255,255,0.08)',

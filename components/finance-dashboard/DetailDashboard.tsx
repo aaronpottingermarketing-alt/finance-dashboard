@@ -35,7 +35,7 @@ function getLastNMonths(allTransactions: ReturnType<typeof useFinanceDashboard>[
     const total = allTransactions
       .filter(t => t.booking_date >= from && t.booking_date <= to && t.amount_pence < 0)
       .reduce((s, t) => s + Math.abs(t.amount_pence), 0)
-    return { label, total_pence: total, isCurrent }
+    return { label, month, total_pence: total, isCurrent }
   })
 }
 
@@ -68,7 +68,13 @@ export default function DetailDashboard({ fd }: Props) {
           <MonthSelector value={fd.selectedMonth} onChange={fd.setSelectedMonth} />
         </div>
 
-        <SpendingChart data={chartData} />
+        <SpendingChart
+          data={chartData}
+          onBarClick={(month) => {
+            fd.setSelectedMonth(month)
+            fd.setDetailTab('transactions')
+          }}
+        />
 
         {/* Tab navigation */}
         <div
