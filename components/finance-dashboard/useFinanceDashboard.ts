@@ -117,10 +117,25 @@ export function useFinanceDashboard() {
   }, [])
 
   const loadBills = useCallback(async () => {
-    const res = await fetch('/api/finance/bills')
+    const cutoff = new Date()
+    cutoff.setDate(cutoff.getDate() - 90)
+    const from = cutoff.toISOString().split('T')[0]
+    const res = await fetch(`/api/finance/transactions?category=bills&from=${from}&limit=1000`)
     if (!res.ok) return
-    const data = await res.json()
-    setBills(data)
+    const transactions: FinanceTransaction[] = await res.json()
+
+    const byMerchant: Record<string, BillScheduleItem> = {}
+    for (const t of transactions) {
+      const key = t.merchant_name ?? t.description
+      if (byMerchant[key]) continue
+      byMerchant[key] = {
+        merchant_name: key,
+        day_of_month: new Date(t.booking_date).getDate(),
+        monthly_pence: Math.abs(t.amount_pence),
+        last_charged: t.booking_date,
+      }
+    }
+    setBills(Object.values(byMerchant).sort((a, b) => a.day_of_month - b.day_of_month))
   }, [])
 
   const loadPortfolio = useCallback(async () => {
