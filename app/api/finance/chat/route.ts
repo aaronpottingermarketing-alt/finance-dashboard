@@ -56,7 +56,7 @@ async function buildFinancialContext(sb: ReturnType<typeof financeSupabase>): Pr
     .map(([month, data]) => {
       const [y, m] = month.split('-').map(Number)
       const label = new Date(y, m - 1).toLocaleString('en-GB', { month: 'long', year: 'numeric' })
-      const topCats = Object.entries(data.cats).sort((a, b) => b[1] - a[1]).slice(0, 5)
+      const topCats = Object.entries(data.cats).sort((a, b) => b[1] - a[1])
         .map(([cat, pence]) => `    ${cat}: ${fmt(pence)}`).join('\n')
       return `  ${label}: Income ${fmt(data.income)} | Spent ${fmt(data.spend)} | Net ${fmt(data.income - data.spend)}\n${topCats}`
     }).join('\n\n')
