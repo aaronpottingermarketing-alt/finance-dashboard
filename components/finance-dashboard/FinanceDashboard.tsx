@@ -117,7 +117,10 @@ export default function FinanceDashboard() {
           {fd.viewMode === 'overview' && <MasterDashboard fd={fd} />}
           {fd.viewMode === 'detail' && <DetailDashboard fd={fd} />}
           {fd.viewMode === 'insights' && <InsightsDashboard fd={fd} />}
-          {fd.viewMode === 'chat' && <FinanceChat />}
+          {/* Always mounted so chat history survives tab switches */}
+          <div style={{ display: fd.viewMode === 'chat' ? 'flex' : 'none', flex: 1, overflow: 'hidden', flexDirection: 'column' }}>
+            <FinanceChat />
+          </div>
         </>
       )}
 
