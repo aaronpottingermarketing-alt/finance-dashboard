@@ -18,6 +18,7 @@ export default function SubscriptionRenewal({ bills }: Props) {
 
   // Find bills renewing in the next 7 days, subscription-range only (< £150/month)
   const renewing = bills.filter(b => {
+    if (b.monthly_pence < 200) return false  // below £2 — noise (mandate fees etc.)
     if (b.monthly_pence >= 15000) return false // above £150 — not a subscription
     let daysUntil: number
     if (b.next_payment_date) {
