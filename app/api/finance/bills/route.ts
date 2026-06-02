@@ -108,7 +108,6 @@ export async function GET() {
   const { data: txnData } = await sb
     .from('finance_transactions')
     .select('*')
-    .eq('is_subscription', true)
     .lt('amount_pence', -MIN_PENCE)
     .eq('category', 'bills')
     .gte('booking_date', THREE_MONTHS_AGO)

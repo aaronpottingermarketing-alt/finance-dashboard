@@ -315,10 +315,10 @@ export async function detectPriceChanges(
 // ─── Bill schedule ────────────────────────────────────────────────────────────
 
 export function buildBillSchedule(transactions: FinanceTransaction[]): BillScheduleItem[] {
-  const subscriptions = transactions.filter(t => t.is_subscription && t.amount_pence < 0)
+  const debits = transactions.filter(t => t.amount_pence < 0)
 
   const byMerchant: Record<string, FinanceTransaction[]> = {}
-  for (const t of subscriptions) {
+  for (const t of debits) {
     const key = t.merchant_name ?? t.description
     if (!byMerchant[key]) byMerchant[key] = []
     byMerchant[key].push(t)
@@ -327,6 +327,10 @@ export function buildBillSchedule(transactions: FinanceTransaction[]): BillSched
   const schedule: BillScheduleItem[] = []
 
   for (const [merchant, txns] of Object.entries(byMerchant)) {
+    // Must appear in at least 2 different months to be considered recurring
+    const months = new Set(txns.map(t => t.booking_date.slice(0, 7)))
+    if (months.size < 2) continue
+
     const days = txns.map(t => new Date(t.booking_date).getDate())
     const dayCount: Record<number, number> = {}
     for (const d of days) dayCount[d] = (dayCount[d] ?? 0) + 1
