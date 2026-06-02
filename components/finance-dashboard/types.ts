@@ -63,6 +63,10 @@ export type FinanceAccount = {
   balance_pence: number
   balance_at: string | null
   synced_at: string
+  finance_connections?: {
+    bank_name: string
+    status: string
+  }
 }
 
 export type FinanceTransaction = {
