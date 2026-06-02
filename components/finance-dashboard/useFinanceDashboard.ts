@@ -353,7 +353,7 @@ export function useFinanceDashboard() {
   }, [selectedMonth, allTransactions, spendByCategory])
 
   const subscriptionsList = useCallback(() => {
-    return allTransactions.filter(t => t.is_subscription && t.amount_pence < 0)
+    return allTransactions.filter(t => t.category === 'subscriptions' && t.amount_pence < 0)
   }, [allTransactions])
 
   const topMerchants = useCallback((n: number) => {
@@ -480,7 +480,7 @@ export function useFinanceDashboard() {
     // Priority 4: subscriptions with low recent usage (< 2 transactions in last 30 days)
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
     const subGroups: Record<string, FinanceTransaction[]> = {}
-    for (const t of allTransactions.filter(t => t.is_subscription && t.amount_pence < 0)) {
+    for (const t of allTransactions.filter(t => t.category === 'subscriptions' && t.amount_pence < 0)) {
       const key = t.merchant_name ?? t.description
       if (!subGroups[key]) subGroups[key] = []
       subGroups[key].push(t)
