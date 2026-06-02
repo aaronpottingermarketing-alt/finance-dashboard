@@ -43,7 +43,10 @@ export default function InsightsDashboard({ fd }: Props) {
             const data = JSON.parse(line.slice(6))
             if (data.text) { accumulated += data.text; setStreamText(accumulated) }
             if (data.done) {
-              try { setAnalysis(JSON.parse(accumulated)) } catch { /* keep stream text */ }
+              const raw = data.full ?? accumulated
+              // Strip markdown code fences if Claude wrapped the JSON
+              const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim()
+              try { setAnalysis(JSON.parse(cleaned)) } catch { /* couldn't parse */ }
               setStreamText('')
             }
           } catch { /* ignore parse errors */ }

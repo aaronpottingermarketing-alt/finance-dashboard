@@ -1,3 +1,4 @@
+export const maxDuration = 60
 
 import { NextRequest } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
@@ -173,7 +174,7 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        // Parse JSON and upsert to finance_ai_insights
+        // Attempt to cache — non-fatal if it fails
         try {
           const payload = JSON.parse(fullText)
           await sb.from('finance_ai_insights').upsert({
@@ -182,21 +183,14 @@ export async function POST(req: NextRequest) {
             insight_type: 'full_analysis',
             payload,
           }, { onConflict: 'period_start,insight_type' })
-        } catch {
-          // Store raw if parse fails
-          await sb.from('finance_ai_insights').upsert({
-            period_start: periodStart,
-            period_end: periodEnd,
-            insight_type: 'full_analysis',
-            payload: { raw: fullText },
-          }, { onConflict: 'period_start,insight_type' })
-        }
+        } catch { /* cache failure is non-fatal */ }
 
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true })}\n\n`))
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true, full: fullText })}\n\n`))
         controller.close()
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Failed to generate full analysis'
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: msg })}\n\n`))
+        // Still send done with whatever we accumulated so client can try to parse
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true, full: fullText, error: msg })}\n\n`))
         controller.close()
       }
     },
