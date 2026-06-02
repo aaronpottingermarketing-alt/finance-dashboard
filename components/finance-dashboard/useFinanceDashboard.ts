@@ -45,7 +45,7 @@ export function useFinanceDashboard() {
   const [portfolioLoading, setPortfolioLoading] = useState(false)
 
   const [selectedMonth, setSelectedMonth] = useState<string>(currentMonthStr)
-  const [viewMode, setViewMode] = useState<'overview' | 'detail' | 'insights'>('overview')
+  const [viewMode, setViewMode] = useState<'overview' | 'detail' | 'insights' | 'chat'>('overview')
   const [detailTab, setDetailTab] = useState<'spending' | 'bills' | 'transactions'>('spending')
   const [selectedPeriod, setSelectedPeriod] = useState<PaydayPeriod | null>(null)
 

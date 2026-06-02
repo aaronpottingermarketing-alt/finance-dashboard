@@ -8,6 +8,7 @@ import AccountsBar from './AccountsBar'
 import MasterDashboard from './MasterDashboard'
 import DetailDashboard from './DetailDashboard'
 import InsightsDashboard from './InsightsDashboard'
+import FinanceChat from './FinanceChat'
 import { SUPPORTED_BANKS } from '@/lib/finance'
 
 export default function FinanceDashboard() {
@@ -69,14 +70,14 @@ export default function FinanceDashboard() {
 
         {hasActiveConnections && (
           <div className="flex rounded-lg overflow-hidden p-0.5" style={{ background: 'rgba(255,255,255,0.05)' }}>
-            {(['overview', 'detail', 'insights'] as const).map(view => (
+            {(['overview', 'detail', 'insights', 'chat'] as const).map(view => (
               <button key={view} onClick={() => fd.setViewMode(view)}
                 className="px-4 py-1.5 text-xs font-medium capitalize transition-all rounded-md"
                 style={{
                   background: fd.viewMode === view ? 'rgba(0,212,170,0.15)' : 'transparent',
                   color: fd.viewMode === view ? '#00d4aa' : '#64748b',
                 }}>
-                {view === 'overview' ? 'Dashboard' : view === 'detail' ? 'Detail' : 'Insights'}
+                {view === 'overview' ? 'Dashboard' : view === 'detail' ? 'Detail' : view === 'insights' ? 'Insights' : '💬 Chat'}
               </button>
             ))}
           </div>
@@ -116,6 +117,7 @@ export default function FinanceDashboard() {
           {fd.viewMode === 'overview' && <MasterDashboard fd={fd} />}
           {fd.viewMode === 'detail' && <DetailDashboard fd={fd} />}
           {fd.viewMode === 'insights' && <InsightsDashboard fd={fd} />}
+          {fd.viewMode === 'chat' && <FinanceChat />}
         </>
       )}
 
