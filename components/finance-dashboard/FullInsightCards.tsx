@@ -139,29 +139,19 @@ export default function FullInsightCards({ analysis, loading, streamText, onRefr
         </button>
       </div>
 
-      {/* ── Streaming state ── */}
-      {loading && streamText && (
-        <div
-          className="p-4 rounded-2xl"
-          style={{
-            background: 'rgba(0,212,170,0.04)',
-            border: '1px solid rgba(0,212,170,0.15)',
-            fontFamily: 'ui-monospace, monospace',
-            fontSize: 11,
-            color: '#00d4aa',
-            lineHeight: 1.7,
-            whiteSpace: 'pre-wrap',
-            wordBreak: 'break-word',
-          }}
-        >
-          <span className="animate-pulse">▌ </span>{streamText}
-        </div>
-      )}
-
-      {/* ── Loading skeleton (no stream yet) ── */}
-      {loading && !streamText && (
+      {/* ── Loading state (skeleton + progress message) ── */}
+      {loading && (
         <div className="flex flex-col gap-3">
-          {/* Headline skeleton */}
+          <div
+            className="p-5 rounded-2xl flex items-center gap-3"
+            style={{ background: 'rgba(0,212,170,0.04)', border: '1px solid rgba(0,212,170,0.15)' }}
+          >
+            <span className="animate-pulse text-lg" style={{ color: '#00d4aa' }}>🧠</span>
+            <div>
+              <p className="text-sm font-semibold" style={{ color: '#00d4aa' }}>Analysing your finances…</p>
+              <p className="text-xs mt-0.5" style={{ color: '#475569' }}>Claude is reading your last 3 months of transactions</p>
+            </div>
+          </div>
           <div
             className="p-5 rounded-2xl flex flex-col gap-3"
             style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
@@ -170,18 +160,12 @@ export default function FullInsightCards({ analysis, loading, streamText, onRefr
             <SkeletonBlock h="h-3" w="w-full" />
             <SkeletonBlock h="h-3" w="w-5/6" />
           </div>
-          {/* Biggest win skeleton */}
           <SkeletonCard />
-          {/* Recommendation skeletons */}
           <div className="grid grid-cols-3 gap-3">
-            <SkeletonCard />
-            <SkeletonCard />
-            <SkeletonCard />
+            <SkeletonCard /><SkeletonCard /><SkeletonCard />
           </div>
-          {/* Pattern skeletons */}
           <div className="grid grid-cols-2 gap-3">
-            <SkeletonCard />
-            <SkeletonCard />
+            <SkeletonCard /><SkeletonCard />
           </div>
         </div>
       )}
