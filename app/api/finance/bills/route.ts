@@ -4,16 +4,14 @@ import { financeSupabase, tlFetch, buildBillSchedule, categoriseTransaction } fr
 import type { FinanceTransaction, BillScheduleItem } from '@/components/finance-dashboard/types'
 
 const TODAY = new Date().toISOString().split('T')[0]
-const MIN_PENCE = 200 // £2 minimum — filters out GoCardless £1 mandate verifications
+const MIN_PENCE = 200
 
-// Date string (YYYY-MM-DD) for 3 months ago — used to drop stale entries
 const THREE_MONTHS_AGO = (() => {
   const d = new Date()
   d.setMonth(d.getMonth() - 3)
   return d.toISOString().split('T')[0]
 })()
 
-// TrueLayer sometimes returns "PAYEE NAME PAYEE NAME" — strip the duplicate half
 function cleanMerchantName(raw: string): string {
   const trimmed = raw.trim()
   const words = trimmed.split(/\s+/)
@@ -36,7 +34,8 @@ export async function GET() {
 
   if (!connections?.length) return NextResponse.json([])
 
-  const bills: BillScheduleItem[] = []
+  // ── 1. TrueLayer: standing orders + direct debits ─────────────────────────
+  const tlBills: BillScheduleItem[] = []
 
   for (const connection of connections) {
     const { data: accounts } = await sb
@@ -59,10 +58,9 @@ export async function GET() {
             const nextDate: string | null = so.next_payment_date ?? null
             if (nextDate && nextDate < TODAY) continue
             const name = cleanMerchantName(so.payee ?? so.reference ?? 'Standing Order')
-            // Exclude if it categorises as a subscription (e.g. gym, streaming)
             if (categoriseTransaction(name) === 'subscriptions') continue
             const dayOfMonth = nextDate ? new Date(nextDate).getDate() : 1
-            bills.push({
+            tlBills.push({
               merchant_name: name,
               day_of_month: dayOfMonth,
               monthly_pence: amountPence,
@@ -72,9 +70,7 @@ export async function GET() {
             })
           }
         }
-      } catch {
-        // bank doesn't support this endpoint — continue
-      }
+      } catch { /* bank doesn't support endpoint */ }
 
       // Direct debits
       try {
@@ -90,13 +86,11 @@ export async function GET() {
             if (nextDate && nextDate < TODAY) continue
             const prevTs: string | null = dd.previous_payment_timestamp ?? null
             const prevDate = prevTs ? prevTs.split('T')[0] : null
-            // Skip stale mandates: last payment was 3+ months ago with no confirmed next date
             if (!nextDate && prevDate && prevDate < THREE_MONTHS_AGO) continue
             const name = cleanMerchantName(dd.name ?? 'Direct Debit')
-            // Exclude if it categorises as a subscription (e.g. gym, streaming)
             if (categoriseTransaction(name) === 'subscriptions') continue
             const dayOfMonth = nextDate ? new Date(nextDate).getDate() : 1
-            bills.push({
+            tlBills.push({
               merchant_name: name,
               day_of_month: dayOfMonth,
               monthly_pence: amountPence,
@@ -106,26 +100,12 @@ export async function GET() {
             })
           }
         }
-      } catch {
-        // bank doesn't support this endpoint — continue
-      }
+      } catch { /* bank doesn't support endpoint */ }
     }
   }
 
-  // If TrueLayer gave us anything, deduplicate and return
-  if (bills.length > 0) {
-    const seen = new Set<string>()
-    const deduped = bills.filter(b => {
-      const key = b.merchant_name.toLowerCase().trim()
-      if (seen.has(key)) return false
-      seen.add(key)
-      return true
-    })
-    return NextResponse.json(deduped.sort((a, b) => a.day_of_month - b.day_of_month))
-  }
-
-  // Fallback: detect from transaction patterns — bills category only, paid within last 3 months
-  const { data, error } = await sb
+  // ── 2. Pattern fallback: bills category, paid within last 3 months ────────
+  const { data: txnData } = await sb
     .from('finance_transactions')
     .select('*')
     .eq('is_subscription', true)
@@ -134,10 +114,28 @@ export async function GET() {
     .gte('booking_date', THREE_MONTHS_AGO)
     .order('booking_date', { ascending: false })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  const patternBills = buildBillSchedule((txnData ?? []) as FinanceTransaction[])
+    .filter(b => !b.last_charged || b.last_charged >= THREE_MONTHS_AGO)
+    .map(b => ({ ...b, source: 'pattern' as const }))
 
-  const schedule = buildBillSchedule((data ?? []) as FinanceTransaction[])
-  // Extra staleness guard: only include if last_charged is within 3 months
-  const fresh = schedule.filter(b => !b.last_charged || b.last_charged >= THREE_MONTHS_AGO)
-  return NextResponse.json(fresh.map(b => ({ ...b, source: 'pattern' as const })))
+  // ── 3. Merge: TrueLayer takes priority; pattern fills gaps ────────────────
+  // Build a normalised key set from TrueLayer results
+  const tlKeys = new Set(tlBills.map(b => b.merchant_name.toLowerCase().trim()))
+
+  const merged: BillScheduleItem[] = [
+    ...tlBills,
+    // Only add pattern bills that don't already have a TrueLayer entry
+    ...patternBills.filter(b => !tlKeys.has(b.merchant_name.toLowerCase().trim())),
+  ]
+
+  // Deduplicate within each source (same payee across multiple accounts)
+  const seen = new Set<string>()
+  const deduped = merged.filter(b => {
+    const key = b.merchant_name.toLowerCase().trim()
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+
+  return NextResponse.json(deduped.sort((a, b) => a.day_of_month - b.day_of_month))
 }
