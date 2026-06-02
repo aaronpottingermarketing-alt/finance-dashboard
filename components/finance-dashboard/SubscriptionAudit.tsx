@@ -6,17 +6,6 @@ interface Props {
   allTransactions: FinanceTransaction[]
 }
 
-type UsageSignal = 'Active' | 'Low usage' | 'Possibly unused'
-
-interface SubRow {
-  name: string
-  monthlyCostPence: number
-  annualCostPence: number
-  lastCharged: string
-  chargesIn90Days: number
-  usage: UsageSignal
-}
-
 function fmt(pence: number): string {
   return (Math.abs(pence) / 100).toLocaleString('en-GB', { style: 'currency', currency: 'GBP' })
 }
@@ -25,83 +14,52 @@ function fmtRound(pence: number): string {
   return (Math.abs(pence) / 100).toLocaleString('en-GB', { style: 'currency', currency: 'GBP', maximumFractionDigits: 0 })
 }
 
-const SIGNAL_ORDER: Record<UsageSignal, number> = {
-  'Possibly unused': 0,
-  'Low usage': 1,
-  'Active': 2,
-}
-
-const SIGNAL_COLOUR: Record<UsageSignal, string> = {
-  'Possibly unused': '#ef4444',
-  'Low usage': '#f59e0b',
-  'Active': '#00d4aa',
+// Strip bank reference codes so "DAVID LLOYD LEISUR 080925DABG31 DDR" → "David Lloyd Leisur"
+function cleanName(t: FinanceTransaction): string {
+  if (t.merchant_name) return t.merchant_name
+  const words = t.description.split(/\s+/)
+  const refIdx = words.findIndex(w => /\d/.test(w) && w.length > 6)
+  const meaningful = refIdx > 0 ? words.slice(0, refIdx) : words
+  return meaningful.map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
 }
 
 export default function SubscriptionAudit({ allTransactions }: Props) {
-  const now = new Date()
-  const cutoff = new Date()
-  cutoff.setDate(cutoff.getDate() - 90)
+  const cutoff45 = new Date()
+  cutoff45.setDate(cutoff45.getDate() - 45)
+  const cutoff45Str = cutoff45.toISOString().split('T')[0]
 
-  // Filter to subscriptions that are debits
-  const subs = allTransactions.filter(t => t.is_subscription && t.amount_pence < 0)
+  // Use category filter — is_subscription flag is unreliable
+  const subs = allTransactions.filter(t => t.category === 'subscriptions' && t.amount_pence < 0)
 
-  if (!subs.length) {
-    return (
-      <div style={{
-        background: 'rgba(255,255,255,0.03)',
-        border: '1px solid rgba(255,255,255,0.07)',
-        borderRadius: '1rem',
-        padding: '1.25rem',
-      }}>
-        <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#475569' }}>
-          Subscription Audit
-        </p>
-        <p style={{ color: '#334155', fontSize: 12, marginTop: '0.75rem' }}>No subscriptions detected</p>
-      </div>
-    )
-  }
-
-  // Deduplicate by merchant — keep most recent for cost; count all within 90 days
+  // Group by cleaned merchant name
   const byMerchant = new Map<string, FinanceTransaction[]>()
   for (const t of subs) {
-    const key = t.merchant_name ?? t.description
+    const key = cleanName(t).toLowerCase().trim()
     const arr = byMerchant.get(key) ?? []
     arr.push(t)
     byMerchant.set(key, arr)
   }
 
-  const rows: SubRow[] = []
+  // Keep only active: charged at least once in last 45 days
+  const activeRows: { name: string; monthlyCostPence: number; lastCharged: string }[] = []
 
-  byMerchant.forEach((txns, name) => {
+  byMerchant.forEach((txns, _key) => {
+    const recentTxns = txns.filter(t => t.booking_date >= cutoff45Str)
+    if (!recentTxns.length) return  // not active
+
     const sorted = [...txns].sort((a, b) => b.booking_date.localeCompare(a.booking_date))
     const latest = sorted[0]
-    const monthlyCost = Math.abs(latest.amount_pence)
-    const chargesIn90 = txns.filter(t => new Date(t.booking_date) >= cutoff).length
-
-    const usage: UsageSignal =
-      chargesIn90 < 2 ? 'Possibly unused' :
-      chargesIn90 <= 3 ? 'Low usage' :
-      'Active'
-
-    rows.push({
-      name,
-      monthlyCostPence: monthlyCost,
-      annualCostPence: monthlyCost * 12,
+    activeRows.push({
+      name: cleanName(latest),
+      monthlyCostPence: Math.abs(latest.amount_pence),
       lastCharged: latest.booking_date,
-      chargesIn90Days: chargesIn90,
-      usage,
     })
   })
 
-  // Sort: possibly unused → low usage → active
-  rows.sort((a, b) => SIGNAL_ORDER[a.usage] - SIGNAL_ORDER[b.usage])
+  activeRows.sort((a, b) => b.monthlyCostPence - a.monthlyCostPence)
 
-  const totalMonthlyPence = rows.reduce((s, r) => s + r.monthlyCostPence, 0)
+  const totalMonthlyPence = activeRows.reduce((s, r) => s + r.monthlyCostPence, 0)
   const totalAnnualPence = totalMonthlyPence * 12
-
-  const lowUsageSavingsPence = rows
-    .filter(r => r.usage === 'Possibly unused' || r.usage === 'Low usage')
-    .reduce((s, r) => s + r.annualCostPence, 0)
 
   const cardStyle: React.CSSProperties = {
     background: 'rgba(255,255,255,0.03)',
@@ -110,20 +68,24 @@ export default function SubscriptionAudit({ allTransactions }: Props) {
     padding: '1.25rem',
   }
 
-  const labelStyle: React.CSSProperties = {
-    fontSize: 11,
-    fontWeight: 600,
-    textTransform: 'uppercase',
-    letterSpacing: '0.1em',
-    color: '#475569',
-    marginBottom: '0.875rem',
+  if (!activeRows.length) {
+    return (
+      <div style={cardStyle}>
+        <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#475569' }}>
+          Active Subscriptions
+        </p>
+        <p style={{ color: '#334155', fontSize: 12, marginTop: '0.75rem' }}>No active subscriptions found</p>
+      </div>
+    )
   }
 
   return (
     <div style={cardStyle}>
-      <p style={labelStyle}>Subscription Audit</p>
+      <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#475569', marginBottom: '0.875rem' }}>
+        Active Subscriptions
+      </p>
 
-      {/* Banner */}
+      {/* Totals banner */}
       <div style={{
         background: 'rgba(167,139,250,0.08)',
         border: '1px solid rgba(167,139,250,0.18)',
@@ -145,72 +107,35 @@ export default function SubscriptionAudit({ allTransactions }: Props) {
       </div>
 
       {/* List */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
-        {rows.map(row => {
-          const sigColour = SIGNAL_COLOUR[row.usage]
-          return (
-            <div
-              key={row.name}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.75rem',
-                padding: '0.625rem 0.75rem',
-                background: 'rgba(255,255,255,0.025)',
-                border: '1px solid rgba(255,255,255,0.05)',
-                borderRadius: '0.75rem',
-              }}
-            >
-              {/* Icon + name */}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: 3 }}>
-                  <span style={{ color: '#a78bfa', fontSize: 12 }}>↻</span>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: '#e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {row.name}
-                  </span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  {/* Usage badge */}
-                  <span style={{
-                    fontSize: 10,
-                    fontWeight: 600,
-                    color: sigColour,
-                    background: `${sigColour}18`,
-                    border: `1px solid ${sigColour}33`,
-                    borderRadius: 999,
-                    padding: '1px 7px',
-                  }}>
-                    {row.usage}
-                  </span>
-                  <span style={{ fontSize: 10, color: '#334155' }}>
-                    Last: {new Date(row.lastCharged).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-                  </span>
-                </div>
-              </div>
-
-              {/* Costs */}
-              <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                <p style={{ fontSize: 12, fontWeight: 700, color: '#e2e8f0' }}>{fmt(row.monthlyCostPence)}<span style={{ fontSize: 10, fontWeight: 400, color: '#475569' }}>/mo</span></p>
-                <p style={{ fontSize: 10, color: '#334155', marginTop: 1 }}>{fmtRound(row.annualCostPence)}/yr</p>
-              </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        {activeRows.map(row => (
+          <div
+            key={row.name}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+              padding: '0.625rem 0.75rem',
+              background: 'rgba(255,255,255,0.025)',
+              border: '1px solid rgba(255,255,255,0.05)',
+              borderRadius: '0.75rem',
+            }}
+          >
+            <span style={{ color: '#a78bfa', fontSize: 12, flexShrink: 0 }}>↻</span>
+            <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {row.name}
+            </span>
+            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+              <p style={{ fontSize: 12, fontWeight: 700, color: '#e2e8f0' }}>
+                {fmt(row.monthlyCostPence)}<span style={{ fontSize: 10, fontWeight: 400, color: '#475569' }}>/mo</span>
+              </p>
+              <p style={{ fontSize: 10, color: '#334155', marginTop: 1 }}>
+                {fmtRound(row.monthlyCostPence * 12)}/yr
+              </p>
             </div>
-          )
-        })}
+          </div>
+        ))}
       </div>
-
-      {/* Bottom insight */}
-      {lowUsageSavingsPence > 0 && (
-        <div style={{
-          padding: '0.625rem 0.875rem',
-          background: 'rgba(239,68,68,0.06)',
-          border: '1px solid rgba(239,68,68,0.15)',
-          borderRadius: '0.75rem',
-          fontSize: 11,
-          color: '#ef4444',
-        }}>
-          You could save <strong>{fmtRound(lowUsageSavingsPence)}/yr</strong> by cancelling low-usage subscriptions
-        </div>
-      )}
     </div>
   )
 }
