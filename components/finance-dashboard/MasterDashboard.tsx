@@ -10,6 +10,7 @@ import DailyBudget from './DailyBudget'
 import SavingsRateCard from './SavingsRateCard'
 import WeeklyDigest from './WeeklyDigest'
 import SubscriptionRenewal from './SubscriptionRenewal'
+import SubscriptionPanel from './SubscriptionPanel'
 import type { TransactionCategory } from './types'
 
 type Props = { fd: ReturnType<typeof useFinanceDashboard> }
@@ -143,6 +144,9 @@ export default function MasterDashboard({ fd }: Props) {
 
         {/* Upcoming bills */}
         <UpcomingBills bills={fd.bills} />
+
+        {/* Active subscriptions */}
+        <SubscriptionPanel subscriptions={fd.subscriptionsList()} />
 
       </div>
 
