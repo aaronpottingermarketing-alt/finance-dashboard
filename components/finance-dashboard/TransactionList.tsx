@@ -1,11 +1,18 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import type { FinanceTransaction, TransactionCategory } from './types'
+import type { FinanceTransaction, FinanceAccount, TransactionCategory } from './types'
 
 interface Props {
   transactions: FinanceTransaction[]
+  accounts?: FinanceAccount[]
   onRecategorise?: (id: string, category: TransactionCategory) => Promise<void>
+}
+
+const BANK_EMOJI: Record<string, string> = {
+  Barclays: '🏦', Barclaycard: '💳', Monzo: '🟠', Starling: '🐦',
+  HSBC: '🏛️', NatWest: '🏦', Lloyds: '🏦', Nationwide: '🏠',
+  Santander: '🏦', Halifax: '🏦',
 }
 
 const CATEGORIES: { value: TransactionCategory; label: string; emoji: string }[] = [
@@ -56,7 +63,11 @@ function formatDate(dateStr: string): string {
   return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
 }
 
-export default function TransactionList({ transactions, onRecategorise }: Props) {
+export default function TransactionList({ transactions, accounts = [], onRecategorise }: Props) {
+  const accountMap = new Map(accounts.map(a => [
+    a.id,
+    { bank: a.finance_connections?.bank_name ?? '', name: a.display_name },
+  ]))
   const [editingId, setEditingId] = useState<string | null>(null)
   const [pickerPos, setPickerPos] = useState({ top: 0, right: 0 })
   const [saving, setSaving] = useState(false)
@@ -147,7 +158,19 @@ export default function TransactionList({ transactions, onRecategorise }: Props)
                     <p style={{ fontSize: '13px', color: '#e2e8f0', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {t.merchant_name ?? t.description}
                     </p>
-                    {t.is_pending && <p style={{ fontSize: '11px', color: '#f59e0b' }}>Pending</p>}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 1 }}>
+                      {(() => {
+                        const acc = accountMap.get(t.account_id)
+                        if (!acc?.bank) return null
+                        const emoji = BANK_EMOJI[acc.bank] ?? '🏦'
+                        return (
+                          <span style={{ fontSize: 10, color: '#334155' }}>
+                            {emoji} {acc.bank}
+                          </span>
+                        )
+                      })()}
+                      {t.is_pending && <span style={{ fontSize: 10, color: '#f59e0b' }}>· Pending</span>}
+                    </div>
                   </div>
 
                   <span style={{

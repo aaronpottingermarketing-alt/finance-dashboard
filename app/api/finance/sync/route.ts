@@ -66,15 +66,29 @@ export async function POST(req: NextRequest) {
             }
           }
 
-          // Fetch transactions (last 90 days)
-          const from = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+          // Fetch transactions — try 365 days, fall back to 90 if provider rejects it
           const to = new Date().toISOString().split('T')[0]
-          const txnRes = await tlFetch(
+          const from365 = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+          const from90 = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+
+          let txnRes = await tlFetch(
             connection.id,
-            `/data/v1/accounts/${account.gc_account_id}/transactions?from=${from}&to=${to}`
+            `/data/v1/accounts/${account.gc_account_id}/transactions?from=${from365}&to=${to}`
           )
 
-          if (!txnRes.ok) continue
+          if (!txnRes.ok) {
+            // Some providers (e.g. Monzo via TrueLayer) cap history at 90 days
+            txnRes = await tlFetch(
+              connection.id,
+              `/data/v1/accounts/${account.gc_account_id}/transactions?from=${from90}&to=${to}`
+            )
+          }
+
+          if (!txnRes.ok) {
+            const errText = await txnRes.text().catch(() => txnRes.statusText)
+            errors.push(`${connection.bank_name} / ${account.display_name}: transactions ${txnRes.status} — ${errText.slice(0, 120)}`)
+            continue
+          }
 
           const txnData = await txnRes.json()
           const rawTxns = txnData.results ?? []
