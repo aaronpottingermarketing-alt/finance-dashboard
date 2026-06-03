@@ -179,6 +179,8 @@ const CATEGORY_RULES: { pattern: RegExp; category: TransactionCategory }[] = [
 
   // ── Transfers (internal moves — check before bills/shopping) ──
   { pattern: /monzo|starling|revolut|wise|transferwise|barclays\s*(transfer|savings)|savings\s*transfer|move\s*to|sent\s*to\s*(self|me)|own\s*account|inter.?account|internal\s*transfer/i, category: 'transfers' },
+  // Personal name transfers — known contacts: ALEX MARTIAL, CONNOR MCCARTHY, S JAMAL, S SINNIAH
+  { pattern: /alex\s*martial|connor\s*mc\s*carthy|s\s*jamal|s\s*sinniah/i, category: 'transfers' },
 
   // ── Fixed bills (utilities, rent, phone, insurance) ──
   { pattern: /council\s*tax|rent\s*(payment|due)|mortgage|letting\s*agent/i, category: 'bills' },
@@ -192,14 +194,20 @@ const CATEGORY_RULES: { pattern: RegExp; category: TransactionCategory }[] = [
   { pattern: /adobe|microsoft\s*365|office\s*365|dropbox|icloud|onedrive|google\s*storage|notion|canva\s*pro|semrush|ahrefs|slack|zoom|lastpass|1password|nordvpn|expressvpn/i, category: 'subscriptions' },
   { pattern: /puregym|david\s*lloyd|virgin\s*active|anytime\s*fitness|the\s*gym|planet\s*fitness|gym\s*membership|fitness\s*first|leisure\s*centre|swimming\s*pool\s*memb/i, category: 'subscriptions' },
   { pattern: /duolingo|headspace|calm\s*app|strava|myfitnesspal|audible|kindle\s*unlimited|scribd|skillshare|masterclass|udemy|coursera/i, category: 'subscriptions' },
+  { pattern: /myiq\b|my\s*iq\s*credit|checkmyfile|clearscore|experian\s*subscri|credit\s*karma|credit\s*monitor/i, category: 'subscriptions' },
 
   // ── Food & drink ──
   { pattern: /deliveroo|uber\s*eats|just\s*eat|doordash/i, category: 'food' },
   { pattern: /tesco|sainsbury|asda|morrisons|waitrose|marks\s*&\s*spencer|m&s\s*(food|simply)|simply\s*food|lidl|aldi|co.?op\s*food|iceland\s*foods|ocado|farmfoods/i, category: 'food' },
   { pattern: /spar\s*|costcutter|budgens|londis|nisa\s*local|premier\s*store|one\s*stop\s*store/i, category: 'food' },
-  { pattern: /ssp\s*|upper\s*crust|ritazza|caffe\s*select|wh\s*smith.*food|omnicom.*dining|staff\s*dining|canteen|vending|selecta\s*sas/i, category: 'food' },
-  { pattern: /mcdonald|burger\s*king|kfc|nandos|subway|domino|pizza\s*(hut|express)|wagamama|itsu|wasabi|leon\s*rest|five\s*guys|shake\s*shack|greggs|pret|costa|starbucks|caffe\s*nero|nero|eat\s*ltd|pod\s*food|crussh/i, category: 'food' },
+  { pattern: /\bssp\b|upper\s*crust|ritazza|caffe\s*select|wh\s*smith.*food|omnicom.*dining|staff\s*dining|canteen|vending|selecta\s*sas/i, category: 'food' },
+  // Square payment prefix (SQ *) — merchant name follows
+  { pattern: /sq\s*\*\s*(giuseppe|cafe|coffee|burger|pizza|grill|kitchen|bar|rest|deli|food|taco|wrap|crepe|bao|noodle|ramen|sushi)/i, category: 'food' },
+  { pattern: /mcdonald|burger\s*king|kfc|nandos|subway|domino|pizza\s*(hut|express)|wagamama|itsu|wasabi|leon\s*rest|five\s*guys|shake\s*shack|greggs|pret\b|pret\s*a\s*manger|costa\b|costa\s*coffee|starbucks|caffe\s*nero|nero|eat\s*ltd|pod\s*food|crussh|tortilla|chipotle|yo\s*sushi|chick.?fil|byron\s*burger|gourmet\s*burger|honest\s*burger|patty\s*&\s*bun|hoppers|dishoom|flat\s*iron|black\s*bear\s*burger/i, category: 'food' },
   { pattern: /giuseppe|trattoria|osteria|taverna|ristorante|aguacate|avocado|brunch|breakfast\s*club/i, category: 'food' },
+  { pattern: /\bmelt\b/i, category: 'food' },
+  // "E S Canary Oil" style local food/deli shops, canary wharf area
+  { pattern: /canary\s*oil|es\s*canary|arina\b/i, category: 'food' },
   { pattern: /restaurant|cafe|bakery|deli\s*|sushi|ramen|curry\s*house|indian\s*take|chinese\s*take|thai\s*rest|bistro|brasserie|pub\s*food|dining/i, category: 'food' },
 
   // ── Transport ──
@@ -218,6 +226,7 @@ const CATEGORY_RULES: { pattern: RegExp; category: TransactionCategory }[] = [
   { pattern: /argos|currys|ao\.com|john\s*lewis|very\.co|littlewoods|lakeland|dunelm|ikea|b&q|screwfix|wickes|homebase|robert\s*dyas|wilko/i, category: 'shopping' },
   { pattern: /apple\s*store(?!.*subscri)|apple\.com(?!.*icloud|.*bill)|samsung\s*store|microsoft\s*store|game\s*digital|hmv\s*|cex\s*|maplin/i, category: 'shopping' },
   { pattern: /boots(?!\s*(advantage|subscri))|superdrug|holland\s*&\s*barrett|the\s*body\s*shop|lush\s*ltd|elemis|kiehl/i, category: 'shopping' },
+  { pattern: /household\s*d\.?i\.?y|diy\s*store|b\s*&\s*m\s*stores|home\s*bargains|the\s*range\s*ltd|poundland|pound\s*world|savers\s*(health|store)/i, category: 'shopping' },
 
   // ── Entertainment ──
   { pattern: /cinema|cineworld|odeon|vue\s*cinema|picturehouse|curzon|showcase\s*cin/i, category: 'entertainment' },
@@ -230,7 +239,7 @@ const CATEGORY_RULES: { pattern: RegExp; category: TransactionCategory }[] = [
   // ── Health ──
   { pattern: /nhs\s*|gp\s*surgery|hospital\s*|pharmacy|chemist|lloyds\s*pharm|boots\s*pharm|superdrug\s*pharm|rowlands\s*pharm|well\s*pharm/i, category: 'health' },
   { pattern: /dentist|dental\s*|orthodont|optician|specsavers|vision\s*express|vision\s*direct|glasses\s*direct|contact\s*lens/i, category: 'health' },
-  { pattern: /physio|chiropract|osteopath|counsell|therapist|psycholog|private\s*clinic|private\s*health|nuffield\s*health|bupa\s*clinic/i, category: 'health' },
+  { pattern: /physio|chiropract|osteopath|counsell|therapist|psycholog|private\s*clinic|private\s*health|nuffield\s*health|bupa\s*clinic|aston\s*clinic/i, category: 'health' },
 ]
 
 export function categoriseTransaction(description: string): TransactionCategory {

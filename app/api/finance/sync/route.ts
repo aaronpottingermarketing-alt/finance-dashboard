@@ -38,6 +38,9 @@ export async function POST(req: NextRequest) {
 
       for (const account of accounts) {
         try {
+          // Savings pots don't expose a transactions endpoint via TrueLayer — skip transaction fetch
+          const isSavings = account.account_type === 'SAVINGS'
+
           // Fetch balance
           const balanceRes = await tlFetch(connection.id, `/data/v1/accounts/${account.gc_account_id}/balance`)
           if (balanceRes.ok) {
@@ -66,6 +69,12 @@ export async function POST(req: NextRequest) {
             }
           }
 
+          // Savings pots don't support the transactions endpoint — skip
+          if (isSavings) {
+            accountsSynced++
+            continue
+          }
+
           // Fetch transactions — try 365 days, fall back to 90 if provider rejects it
           const to = new Date().toISOString().split('T')[0]
           const from365 = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
@@ -91,7 +100,18 @@ export async function POST(req: NextRequest) {
           }
 
           const txnData = await txnRes.json()
-          const rawTxns = txnData.results ?? []
+          // TrueLayer wraps results in `results` for most providers, but some (e.g. Monzo
+          // via Open Banking) return `transactions` as a top-level array instead. Handle both.
+          const rawTxns: unknown[] =
+            Array.isArray(txnData.results) ? txnData.results :
+            Array.isArray(txnData.transactions) ? txnData.transactions :
+            Array.isArray(txnData) ? txnData :
+            []
+
+          if (rawTxns.length === 0 && txnData.status && txnData.status !== 'Succeeded') {
+            errors.push(`${connection.bank_name} / ${account.display_name}: unexpected TrueLayer status ${txnData.status}`)
+            continue
+          }
 
           // Load merchant rules once per account sync
           const { data: merchantRules } = await sb
@@ -99,7 +119,9 @@ export async function POST(req: NextRequest) {
             .select('merchant_key, category')
           const rulesMap = new Map((merchantRules ?? []).map(r => [r.merchant_key, r.category]))
 
-          for (const raw of rawTxns) {
+          for (const rawUnknown of rawTxns) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const raw = rawUnknown as Record<string, any>
             const amountPence = Math.round((raw.amount ?? 0) * 100)
             const description =
               raw.description ??
@@ -112,9 +134,13 @@ export async function POST(req: NextRequest) {
             const merchantKey = (merchantName ?? description).toLowerCase().trim()
             const category = rulesMap.get(merchantKey) ?? categoriseTransaction(description)
 
+            // Build a stable fallback ID — include normalised amount and a hash of description
+            // to avoid collisions when two transactions occur at the same timestamp
+            const fallbackId = `tl-${account.gc_account_id}-${raw.timestamp ?? ''}-${amountPence}-${description.slice(0, 20).replace(/\s+/g, '_')}`
+
             const txnRow = {
               account_id: account.id,
-              gc_transaction_id: raw.transaction_id ?? `tl-${account.gc_account_id}-${raw.timestamp}-${amountPence}`,
+              gc_transaction_id: raw.transaction_id ?? fallbackId,
               booking_date: (raw.timestamp ?? new Date().toISOString()).split('T')[0],
               value_date: null,
               description,
