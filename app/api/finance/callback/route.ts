@@ -74,16 +74,23 @@ export async function GET(req: NextRequest) {
     }
 
     // Try to fetch accounts quickly — skip if slow
+    // Fetch both /accounts (current/savings) and /cards (credit cards like Barclaycard)
     try {
-      const accountsRes = await Promise.race([
-        fetch(`${TL_DATA_BASE}/data/v1/accounts`, {
-          headers: { Authorization: `Bearer ${tokens.access_token}` },
-        }),
+      const [accountsRes, cardsRes] = await Promise.race([
+        Promise.all([
+          fetch(`${TL_DATA_BASE}/data/v1/accounts`, {
+            headers: { Authorization: `Bearer ${tokens.access_token}` },
+          }),
+          fetch(`${TL_DATA_BASE}/data/v1/cards`, {
+            headers: { Authorization: `Bearer ${tokens.access_token}` },
+          }),
+        ]),
         new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error('timeout')), 8000)
         ),
       ])
 
+      // Upsert current/savings accounts
       if (accountsRes.ok) {
         const accountsData = await accountsRes.json()
         const accounts = accountsData.results ?? []
@@ -94,6 +101,22 @@ export async function GET(req: NextRequest) {
             display_name: account.display_name ?? account.account_type ?? 'Account',
             account_type: account.account_type ?? null,
             currency: account.currency ?? 'GBP',
+            balance_pence: 0,
+          }, { onConflict: 'gc_account_id' })
+        }
+      }
+
+      // Upsert credit card accounts (Barclaycard etc)
+      if (cardsRes.ok) {
+        const cardsData = await cardsRes.json()
+        const cards = cardsData.results ?? []
+        for (const card of cards) {
+          await sb.from('finance_accounts').upsert({
+            connection_id: connection.id,
+            gc_account_id: card.account_id,
+            display_name: card.display_name ?? card.card_type ?? 'Credit Card',
+            account_type: 'CREDIT_CARD',
+            currency: card.currency ?? 'GBP',
             balance_pence: 0,
           }, { onConflict: 'gc_account_id' })
         }

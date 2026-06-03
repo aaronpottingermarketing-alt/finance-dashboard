@@ -78,18 +78,34 @@ export const SUPPORTED_BANKS = [
   { id: 'ob-halifax', name: 'Halifax', emoji: '🏦' },
 ]
 
+// TrueLayer provider IDs for credit card providers — these need the 'cards' scope
+const CREDIT_CARD_PROVIDERS = new Set(['ob-bcard', 'ob-amex', 'ob-capital-one', 'ob-mbna'])
+
 // Build the TrueLayer OAuth URL
-export function buildTrueLayerAuthUrl(state: string, redirectUri: string): string {
+export function buildTrueLayerAuthUrl(
+  state: string,
+  redirectUri: string,
+  institutionId?: string
+): string {
+  // Credit card providers require the 'cards' scope in addition to standard scopes
+  const needsCardScope = institutionId ? CREDIT_CARD_PROVIDERS.has(institutionId) : false
+  const scope = needsCardScope
+    ? 'info accounts balance transactions cards offline_access'
+    : 'info accounts balance transactions offline_access'
+
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: process.env.TRUELAYER_CLIENT_ID!,
-    scope: 'info accounts balance transactions offline_access',
+    scope,
     redirect_uri: redirectUri,
     state,
   })
   // Sandbox uses the mock provider; production uses all UK banks
   if (isSandbox) {
     params.set('providers', 'mock')
+  } else if (institutionId) {
+    // Pre-select the specific provider so the user lands directly on their bank's login
+    params.set('providers', institutionId)
   } else {
     params.set('providers', 'uk-ob-all uk-oauth-all')
   }

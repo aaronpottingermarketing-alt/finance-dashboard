@@ -17,7 +17,7 @@ export default function ConnectBankPrompt({ onConnect }: Props) {
     try {
       await onConnect(id)
     } catch {
-      setError('Failed to start connection. Check your GoCardless credentials.')
+      setError('Failed to start connection. Check your TrueLayer credentials.')
       setConnecting(false)
     }
   }

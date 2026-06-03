@@ -40,9 +40,12 @@ export async function POST(req: NextRequest) {
         try {
           // Savings pots don't expose a transactions endpoint via TrueLayer — skip transaction fetch
           const isSavings = account.account_type === 'SAVINGS'
+          // Credit cards (Barclaycard etc) use /cards/* endpoints instead of /accounts/*
+          const isCreditCard = account.account_type === 'CREDIT_CARD'
+          const tlBase = isCreditCard ? 'cards' : 'accounts'
 
           // Fetch balance
-          const balanceRes = await tlFetch(connection.id, `/data/v1/accounts/${account.gc_account_id}/balance`)
+          const balanceRes = await tlFetch(connection.id, `/data/v1/${tlBase}/${account.gc_account_id}/balance`)
           if (balanceRes.ok) {
             const balanceData = await balanceRes.json()
             const results = balanceData.results ?? []
@@ -82,14 +85,14 @@ export async function POST(req: NextRequest) {
 
           let txnRes = await tlFetch(
             connection.id,
-            `/data/v1/accounts/${account.gc_account_id}/transactions?from=${from365}&to=${to}`
+            `/data/v1/${tlBase}/${account.gc_account_id}/transactions?from=${from365}&to=${to}`
           )
 
           if (!txnRes.ok) {
             // Some providers (e.g. Monzo via TrueLayer) cap history at 90 days
             txnRes = await tlFetch(
               connection.id,
-              `/data/v1/accounts/${account.gc_account_id}/transactions?from=${from90}&to=${to}`
+              `/data/v1/${tlBase}/${account.gc_account_id}/transactions?from=${from90}&to=${to}`
             )
           }
 
